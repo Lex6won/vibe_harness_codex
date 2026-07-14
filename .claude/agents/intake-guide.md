@@ -53,6 +53,11 @@ tools: [Read, Write]
 - `audience_choice`, `service_zone`, `work_mode`, `maturity_level_candidate`, `early_risk_flags`
 - 다음 에이전트: `stage-advisor`, `feature-discovery`, `change-coder`, `security-checker`, `release-packager`, `pilot-evaluator`, 또는 `submit-packager`
 
+## L1 기본 시 stage-advisor 생략 (홉 축소)
+승격 신호(개인정보·시민 접근·외부통신·파일업로드·지속 DB·공식 명칭)가 **없고** 목표가 L1이면,
+성숙도를 L1로 직접 설정하고 다음 에이전트를 `feature-discovery`로 보낸다(stage-advisor 생략).
+승격 신호가 있거나 사용자가 L2/L3을 목표하면 `stage-advisor`로 보낸다.
+
 ## 원칙
 - 첫 질문은 하나만 한다.
 - 질문은 업무 언어로 한다.
