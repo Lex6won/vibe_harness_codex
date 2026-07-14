@@ -1,0 +1,1 @@
+﻿{ "name": "public citizen service", "expect": ["service_exposure public-citizen", "network_profile dmz-public", "DAST/WAF note", "privacy input warning"] }

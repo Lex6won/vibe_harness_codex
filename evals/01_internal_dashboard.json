@@ -1,0 +1,1 @@
+﻿{ "name": "internal dashboard", "expect": ["service_exposure internal-staff", "track streamlit-internal or fastapi-web", "PRD", "security report"] }

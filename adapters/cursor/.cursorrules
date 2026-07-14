@@ -1,0 +1,1 @@
+﻿Follow vibecode-harness. Use approved Tracks only. No external CDN or BaaS direct dependency for production. Use Keycloak OIDC and PostgreSQL 16.

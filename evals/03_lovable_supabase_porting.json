@@ -1,0 +1,1 @@
+﻿{ "name": "lovable supabase porting", "expect": ["prototype only", "no direct supabase-js", "Track B or N conversion"] }

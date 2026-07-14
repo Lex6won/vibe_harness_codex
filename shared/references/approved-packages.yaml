@@ -1,0 +1,51 @@
+﻿policy: 넓은 승인, 강한 차단
+version: draft-0.1
+python:
+  core:
+    - fastapi
+    - uvicorn
+    - pydantic
+    - jinja2
+    - python-multipart
+    - sqlalchemy
+    - psycopg
+    - alembic
+    - authlib
+    - PyJWT
+    - argon2-cffi
+    - cryptography
+    - streamlit
+    - pandas
+    - openpyxl
+    - matplotlib
+    - plotly
+  restricted:
+    - requests
+    - httpx
+    - beautifulsoup4
+npm_frontend:
+  core:
+    - react
+    - react-dom
+    - vite
+    - typescript
+    - react-router-dom
+    - lucide-react
+    - recharts
+    - zod
+    - '@tanstack/react-query'
+  restricted:
+    - axios
+npm_backend:
+  core:
+    - express
+    - express-rate-limit
+    - helmet
+    - pg
+    - zod
+    - openid-client
+    - jose
+    - pino
+  restricted:
+    - node-fetch
+    - undici

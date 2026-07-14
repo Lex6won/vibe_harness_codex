@@ -1,0 +1,19 @@
+﻿runtime:
+  python: "3.12"
+  node: "20"
+  postgresql: "16"
+web:
+  server: nginx
+  app_base_path: /apps/<project>/
+was:
+  runtime: podman-rootless
+  default_quota: 1C/2G
+  health_path: /health
+logging:
+  application: stdout
+  host: journald
+security:
+  auth: Keycloak OIDC
+  secrets: podman secret or environment variables
+  registry: internal Harbor only
+  external_cdn: forbidden

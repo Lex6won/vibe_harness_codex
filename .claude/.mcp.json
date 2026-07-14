@@ -1,0 +1,11 @@
+﻿{
+  "mcpServers": {
+    "vibecode-checker": {
+      "command": "gvskb",
+      "args": ["mcp"],
+      "env": {
+        "GVSKB_MODE": "offline"
+      }
+    }
+  }
+}

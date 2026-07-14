@@ -1,0 +1,25 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "vibecode-manifest",
+  "type": "object",
+  "required": ["project_id", "service_exposure", "network_profile", "track", "artifacts", "gates"],
+  "properties": {
+    "project_id": {"type": "string"},
+    "service_name": {"type": "string"},
+    "work_mode": {"enum": ["new-build", "change", "security-check", "release", "prototype-conversion", "pilot-evaluation", "unknown"]},
+    "maturity_level": {"enum": ["L0", "L1", "L2", "L3", "L4", "unknown"]},
+    "maturity_reason": {"type": "string"},
+    "next_gate": {"type": "string"},
+    "service_exposure": {"enum": ["internal-staff", "public-citizen", "hybrid", "unknown"]},
+    "network_profile": {"enum": ["admin-network", "dmz-public", "internet-prototype", "unknown"]},
+    "runtime_external_access": {"enum": ["none", "approved-proxy", "dmz-only", "pending-exception", "unknown"]},
+    "data_level": {"enum": ["green", "yellow", "red", "unknown"]},
+    "track": {"enum": ["fastapi-web", "streamlit-internal", "react-fastapi", "node-api", "local-automation", "unknown"]},
+    "feature_discovery": {"type": "object"},
+    "artifacts": {"type": "object"},
+    "security_check": {"type": "object"},
+    "pilot_metrics": {"type": "object"},
+    "exceptions": {"type": "array"},
+    "gates": {"type": "object"}
+  }
+}

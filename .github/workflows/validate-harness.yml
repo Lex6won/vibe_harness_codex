@@ -1,0 +1,16 @@
+﻿name: validate-harness
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate harness
+        shell: pwsh
+        run: ./shared/scripts/gg-validate.ps1 -Root . -Level L1

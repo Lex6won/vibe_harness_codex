@@ -1,0 +1,13 @@
+﻿gates:
+  G1_template:
+    description: approved golden template
+  G2_code:
+    description: vibecode-checker plus internal rescan
+    official_authority: server_rescan
+  G3_package:
+    description: internal mirrors, lockfiles, approved packages
+  G4_image:
+    description: Harbor Trivy image scan
+    block: Critical/High CVE
+  G5_operation:
+    description: DEV validation, approval, PRD deploy, DMZ DAST/WAF for public

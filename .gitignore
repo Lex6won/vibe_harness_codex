@@ -1,0 +1,25 @@
+﻿# Local/generated workspace
+_workspace/
+dist/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Node
+node_modules/
+dist/
+coverage/
+
+# Secrets
+.env
+*.local
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
