@@ -97,7 +97,8 @@ description: 공무원이 업무 도구나 서비스를 구상·설계·구현·
 - 단계 산출물 없이 다음 단계로 가지 않는다.
 - 기술결정은 규칙으로 정하고, 업무결정만 사용자에게 묻는다.
 - 사용자가 모르면 기본안을 제시한다.
-- 패키지는 `approved-packages.yaml`, `package-denylist.yaml`, `package-risk-policy.md`를 따른다.
+- 개발/운영 환경, 언어, DBMS, 플러그인, 라이브러리는 `shared/institution-profile.yaml`을 최우선으로 따른다.
+- 패키지는 `shared/institution-profile.yaml`, `approved-packages.yaml`, `package-denylist.yaml`, `package-risk-policy.md`를 따른다.
 - 성숙도는 `service-maturity-model.md`를 따른다.
 - 보안검사 로직을 직접 만들지 않는다.
 - 대민은 사람 승인 없이 완료 처리하지 않는다.

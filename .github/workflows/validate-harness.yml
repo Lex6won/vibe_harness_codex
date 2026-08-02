@@ -14,3 +14,6 @@ jobs:
       - name: Validate harness
         shell: pwsh
         run: ./shared/scripts/gg-validate.ps1 -Root . -Level L1
+      - name: Validate eval cases
+        shell: pwsh
+        run: ./shared/scripts/gg-eval.ps1 -Root .

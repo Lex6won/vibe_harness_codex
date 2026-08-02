@@ -1,0 +1,124 @@
+lifecycle_quality_gates_version: 1
+
+purpose:
+  - "Keep coding agents aligned from idea to release without turning every prototype into a full production project."
+  - "Make security, package safety, testability, and handoff evidence proportional to maturity level."
+
+principles:
+  just_enough_artifacts: "Produce the minimum evidence needed for the current maturity level, then escalate only when risk requires it."
+  safe_by_default: "Prefer approved tracks, golden templates, standard libraries, and approved packages."
+  replacement_before_exception: "When a package, runtime, plugin, or architecture is blocked, suggest a safe replacement before asking for an exception."
+  evidence_not_approval: "MCP and checker outputs are evidence; official approval remains with the institution."
+  keep_user_at_business_level: "Ask civil servants about users, data, and 업무흐름; do not make them choose frameworks or package managers."
+
+stages:
+  idea:
+    goal: "Clarify the 업무 problem, users, data, exposure, and success shape."
+    minimum_outputs:
+      - "_workspace/00_feature_brief.md"
+      - "manifest.work_mode"
+      - "manifest.maturity_level"
+    gate:
+      pass_when:
+        - "user_scope_known"
+        - "data_level_estimated"
+      escalate_when:
+        - "citizen_access"
+        - "personal_or_sensitive_data"
+        - "file_upload"
+        - "persistent_database"
+
+  design:
+    goal: "Select approved track, runtime, DBMS, network profile, and package boundaries."
+    minimum_outputs:
+      - "_workspace/01_PRD_서비스기획서.md"
+      - "_workspace/02_화면_기능설계서.md"
+      - "_workspace/04_개발스택_운영환경.md"
+    gate:
+      pass_when:
+        - "approved_track_selected"
+        - "runtime_policy_applied"
+        - "package_policy_boundary_recorded"
+      block_when:
+        - "unapproved_dbms_without_alternative"
+        - "external_saas_dependency_without_exception"
+
+  implementation:
+    goal: "Implement only inside approved golden templates and preserve feature delivery when replacing unsafe dependencies."
+    minimum_outputs:
+      - "_workspace/source/"
+      - "manifest.dependencies"
+      - "manifest.gates.dev_ready"
+    gate:
+      pass_when:
+        - "source_inside_workspace"
+        - "golden_template_used"
+        - "no_denied_package"
+        - "blocked_package_has_replacement_or_exception"
+      block_when:
+        - "new_framework_without_track"
+        - "denied_package_without_replacement"
+        - "runtime_external_access_added_without_policy"
+
+  test:
+    goal: "Confirm code, dependencies, privacy/secret risks, health, and smoke behavior."
+    minimum_outputs:
+      - "_workspace/05_보안점검보고서.md"
+      - "manifest.security_check"
+      - "manifest.gates.security_status"
+    gate:
+      pass_when:
+        - "scan_path_or_equivalent_completed"
+        - "dependencies_checked_or_marked_needs_review"
+        - "health_or_smoke_test_recorded"
+      block_when:
+        - "critical_or_high_unresolved"
+        - "dependency_scan_missing_for_L2_or_L3"
+        - "scanned_file_count_zero"
+
+  release:
+    goal: "Prepare handoff package for operations/security without claiming official approval."
+    minimum_outputs:
+      - "_workspace/06_MCP_검증결과.md"
+      - "_workspace/07_서버설치_배포가이드.md"
+      - "_workspace/08_배포신청서.md"
+      - "dist/"
+    gate:
+      pass_when:
+        - "full_security_evidence_present"
+        - "deployment_environment_matches_profile"
+        - "package_registry_or_review_status_recorded"
+      block_when:
+        - "official_approval_claimed_by_harness"
+        - "production_deploy_without_user_request"
+
+balance_checks:
+  too_light:
+    - symptom: "L2 or L3 with no dependency evidence"
+      action: "block and request scan_dependencies or registry evidence"
+    - symptom: "feature implemented with new package but no reason or alternative review"
+      action: "warn for L1, block for L2/L3"
+    - symptom: "security report says safe when no files were scanned"
+      action: "block"
+  too_heavy:
+    - symptom: "L1 idea/prototype forced to complete deployment application forms"
+      action: "downgrade to feature brief, manifest, source, quick check"
+    - symptom: "public-sector legal approval language used for a prototype"
+      action: "replace with ready-for-review wording"
+    - symptom: "user is asked to choose framework, package manager, or DBMS"
+      action: "agent decides from institution profile and asks only 업무 questions"
+
+manifest_expectations:
+  required_common:
+    - "work_mode"
+    - "maturity_level"
+    - "service_exposure"
+    - "network_profile"
+    - "track"
+    - "gates"
+  package_fields:
+    - "dependencies.requested"
+    - "dependencies.approved"
+    - "dependencies.replaced"
+    - "dependencies.needs_review"
+    - "dependencies.denied"

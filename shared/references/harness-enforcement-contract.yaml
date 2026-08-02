@@ -1,0 +1,285 @@
+harness_enforcement_contract_version: 1
+
+purpose:
+  - "Define the runtime contract between the harness, vibecode-checker(gvskb), and the trusted package registry."
+  - "Make the harness the user-side enforcement layer: it blocks, warns, or allows agent actions based on checker verdicts."
+  - "Keep package analysis and registry governance outside the harness implementation."
+
+role_separation:
+  harness:
+    responsibility:
+      - "Constrain AI coding agents and users before package install/use, code generation, test, and release handoff."
+      - "Call vibecode-checker/gvskb for package and security evidence when dependencies or release gates are involved."
+      - "Translate checker verdicts into pass/warn/block decisions according to this contract and the institution profile."
+      - "Show a safe next action whenever blocking occurs."
+    must_not:
+      - "Directly call the registry service as a normal package decision path."
+      - "Invent package safety analysis when checker evidence is missing."
+      - "Declare official security approval or final package approval."
+      - "Silently approve, reject, or update the official registry catalog."
+  vibecode_checker:
+    responsibility:
+      - "Analyze code and manifests."
+      - "Query the registry service when registry-backed package governance is available."
+      - "Combine registry status, vulnerability intelligence, malicious-package signals, cooldown, and cache freshness into a single verdict."
+      - "Return evidence fields that the harness can enforce."
+    output_role: "evidence_and_verdict_provider"
+  registry_service:
+    responsibility:
+      - "Store institution package allow/deny/review decisions for PyPI and npm packages."
+      - "Manage approved, rejected, under-review, cooldown, conditional, and stale states."
+      - "Provide source-of-truth package governance to vibecode-checker."
+    output_role: "governance_source_of_truth"
+  human_or_platform_reviewer:
+    responsibility:
+      - "Make final approval, rejection, exception, and condition decisions."
+
+implementation_language_policy:
+  allowed_function_implementation_languages:
+    - python
+    - javascript
+  allowed_runtimes:
+    python: "CPython versions declared in shared/institution-profile.yaml"
+    javascript: "Node.js versions declared in shared/institution-profile.yaml, plus browser JavaScript for approved React/Vite frontend tracks"
+  not_allowed_without_exception:
+    - java
+    - kotlin
+    - go
+    - php
+    - ruby
+    - csharp
+    - rust
+    - dart
+    - swift
+    - native_binary_runtime
+  typescript_policy: "Do not create TypeScript implementation source by default. TypeScript may appear only as a build-time compatibility/tooling exception when the institution profile explicitly allows it."
+  enforcement_rule: "If a requested implementation needs a non-Python/non-JavaScript language, mark needs-review and suggest an approved Python or JavaScript track instead."
+
+checker_call_contract:
+  registry_access: "checker-mediated-only"
+  normal_path:
+    - "For package decisions, call vibecode-checker/gvskb; do not call registry directly."
+    - "Use scan_dependencies for manifest/lockfile decisions and package-oriented gates."
+    - "Use scan_path for source security checks."
+    - "Use checker verdict fields as the enforcement input."
+  audit_metadata_to_send_when_supported:
+    caller: "harness:auto"
+    request_type: "AUTO or MANUAL"
+    project_id: "non-personal project identifier"
+    maturity_level: "L0/L1/L2/L3/L4"
+    env_grade: "E0/E1/E2/E3"
+    track: "approved track id"
+    requested_package: "ecosystem/name/version when applicable"
+  personal_data_rule: "Do not send requester name, personal email, employee id, resident registration number, secrets, source code unrelated to the scan, or private tokens as audit metadata."
+
+required_checker_fields:
+  package_level:
+    - verdict
+    - verdict_severity
+    - requires_review
+    - checked
+    - is_malicious_package
+    - in_kev
+    - max_cve
+    - cooldown.ok
+    - registry_status
+    - registry_decision
+    - heuristics.typosquat_warning
+  manifest_level:
+    - truncated_count
+    - unchecked_count
+    - intel_cache.state
+    - registry_status
+    - source_kind
+
+verdict_priority:
+  - malicious
+  - registry_rejected
+  - not_found
+  - vulnerable
+  - cooldown_hold
+  - checked_stale
+  - registry_approved
+  - checked_clean
+  - unknown
+  - error
+
+absolute_block:
+  regardless_of_mode:
+    - "verdict == malicious"
+    - "verdict == registry_rejected"
+    - "verdict == not_found"
+    - "in_kev == true"
+  notes:
+    not_found: "Official registry absence is not a heuristic. Treat it as a likely hallucinated or slopsquatting-prone package name and block before install."
+    stale_rejected_cache: "If a cached registry rejection is stale or registry is unreachable, keep blocking. Show that the rejection is stale/current registry confirmation failed; do not downgrade to warning."
+
+enforcement_modes:
+  default_mode: MONITOR
+  mode_owner: "institution security/operations policy"
+  initial_rollout:
+    recommended_default: MONITOR
+    recommended_transition: "MONITOR for 2 weeks, then WARN after security/operations confirmation."
+    reason: "If the registry has little or no real package data, most packages return unknown; starting in WARN/ENFORCE can create warning fatigue or bypass culture."
+  modes:
+    MONITOR:
+      meaning: "Record and report findings. Do not block except absolute_block cases."
+      recommended_for: "Initial observation period or incomplete registry rollout."
+    WARN:
+      meaning: "Block high-risk and absolute-block cases, warn on uncertain or stale evidence."
+      recommended_for: "Early operational default for public-sector vibe coding."
+    ENFORCE:
+      meaning: "Fail safe on unknown/error/cooldown and block medium+ dependency risk."
+      recommended_for: "Registry/checker coverage is operationally reliable."
+
+mode_decision_table:
+  vulnerable_critical_or_high:
+    MONITOR: warn
+    WARN: block
+    ENFORCE: block
+  vulnerable_medium_or_low:
+    MONITOR: log
+    WARN: warn
+    ENFORCE: block
+  vulnerable_unknown_severity:
+    MONITOR: warn
+    WARN: warn
+    ENFORCE: block
+  cooldown_hold:
+    MONITOR: log
+    WARN: warn
+    ENFORCE: block
+  checked_stale:
+    MONITOR: log
+    WARN: warn
+    ENFORCE: warn
+  unknown_or_error:
+    MONITOR: log
+    WARN: warn
+    ENFORCE: block
+  registry_approved_checked_true:
+    MONITOR: pass
+    WARN: pass
+    ENFORCE: pass
+  registry_approved_checked_false:
+    MONITOR: pass
+    WARN: warn
+    ENFORCE: warn
+  checked_clean:
+    MONITOR: pass
+    WARN: pass
+    ENFORCE: pass
+  existing_package_typosquat_warning:
+    MONITOR: warn
+    WARN: warn
+    ENFORCE: warn
+
+environment_grades:
+  default_for_personal_pc_harness: E1
+  default_for_internal_server_or_ci: E2
+  grades:
+    E0:
+      meaning: "Personal PC, one-time/local experiment, public or dummy data only."
+      cooldown_days: 3
+      auto_approval_possible: true
+    E1:
+      meaning: "Personal PC repeated tool or internal document/data handling."
+      cooldown_days: 7
+      auto_approval_possible: true
+    E2:
+      meaning: "Internal server, shared runtime, administrative information, or CI/CD."
+      cooldown_days: 14
+      auto_approval_possible: false
+      requires_human_review: true
+    E3:
+      meaning: "Citizen-facing, personal/sensitive data, authentication, payment, or core administrative decisioning."
+      cooldown_days: 14
+      auto_approval_possible: false
+      requires_human_review: true
+      harness_position: "The harness may prepare evidence and code, but cannot authorize operation."
+  transition_rules:
+    - "Harness determines env_grade from runtime, exposure, data, and deployment target; do not ask the developer to self-declare a lower grade."
+    - "E1 to E2 upgrade is allowed without approval."
+    - "E1 to E0 downgrade requires reason and approval record."
+    - "Always display the applied env_grade in the manifest and package/security reports."
+
+local_catalog_and_registry_priority:
+  rules:
+    - "Local deny/block always wins over local allow."
+    - "If registry_decision is REJECTED or verdict is registry_rejected, block even when local allow lists the package."
+    - "If local deny blocks a package, block regardless of registry approval."
+    - "If local allow and checker returns registry_approved/checked_clean, pass."
+    - "If local allow but checker returns unknown, under_review, cooldown_hold, checked_stale, error, or checked=false, apply mode_decision_table."
+    - "If no local catalog entry but checker returns registry_approved/checked_clean, pass."
+    - "If no local catalog entry and checker returns unknown/error, apply mode_decision_table and propose a replacement."
+  catalog_export_for_registry:
+    approved_packages_file: "shared/references/approved-packages.yaml"
+    denied_packages_file: "shared/references/package-denylist.yaml"
+    export_rule: "When sharing a package catalog with the registry, mark allowlist entries as APPROVED and denylist entries as REJECTED; mixed catalogs must carry an explicit status field per package."
+
+freshness_policy:
+  asymmetric_rule: "Require fresh evidence before becoming less strict; do not require fresh evidence to remain strict."
+  allow_or_pass_decision:
+    stale_or_expired: "Retry checker/registry lookup before pass."
+    retry_failed: "Do not pass; treat as unknown/error according to mode."
+  block_decision:
+    stale_or_expired: "Retry checker/registry lookup when possible."
+    retry_failed: "Keep the older block with stale notation."
+  stale_rejected_cache: "A stale registry rejection remains a block until a fresh non-rejected verdict is obtained."
+  rationale: "If stale block decisions are downgraded on network failure, absolute/rejected blocks become easier to bypass during outage or offline work."
+
+typosquat_policy:
+  harness_action: "Warn only for an existing package with heuristics.typosquat_warning. Do not block solely on typosquat heuristics."
+  registry_action: "Registry may withhold automatic approval and return UNDER_REVIEW when typosquat heuristics are present."
+  not_found_overlap: "If the package is not found in the official registry, apply the absolute not_found block instead of the typosquat warning rule."
+  rationale: "Typosquat detection is heuristic and can create false positives as the comparison corpus grows; warning is appropriate for harness enforcement, human review is appropriate for registry approval."
+
+bypass_policy:
+  allowed_for:
+    - "unknown"
+    - "error"
+    - "checked_stale"
+    - "cooldown_hold when institution policy allows manual review path"
+    - "vulnerable medium_or_low with compensating control and reviewer path"
+  never_allowed_for:
+    - "malicious"
+    - "registry_rejected"
+    - "not_found"
+    - "in_kev"
+  reason_code_required: true
+  free_text_reason: "not allowed as the primary reason; optional detail must not contain personal data"
+  monthly_report_required: true
+  starter_reason_codes:
+    - "DEV_ONLY_NO_RUNTIME_USE"
+    - "OFFLINE_EVIDENCE_PENDING"
+    - "APPROVED_INTERNAL_MIRROR_PENDING_SYNC"
+    - "LEGACY_COMPAT_TEMPORARY"
+    - "SECURITY_REVIEW_TICKET_OPENED"
+    - "REPLACEMENT_NOT_FUNCTIONALLY_AVAILABLE"
+
+conditional_approval_enforcement:
+  rule: "If checker/registry returns conditions such as --ignore-scripts, pinned version, internal mirror only, no external API, or dev-only use, the harness may allow only when it can enforce and record every condition."
+  cannot_enforce: "If any condition cannot be enforced by the selected tool/runtime, treat as block or needs-review according to mode."
+
+hash_and_integrity_policy:
+  hash_mismatch: "If name/version match but package hash differs from approved evidence, block in WARN/ENFORCE and mark needs human review."
+  lockfile_required_for_release: "L2/L3/L4 handoff requires pinned versions and lockfiles where the ecosystem supports them."
+  npm_install_rule: "Prefer npm ci --ignore-scripts from a lockfile for reviewed projects."
+
+block_response_contract:
+  every_block_must_show:
+    - "package or action blocked"
+    - "checker verdict and key evidence"
+    - "applied mode and env_grade"
+    - "safe replacement package, standard-library path, or approved track change"
+    - "safe version if checker provides one"
+    - "cooldown wait days when applicable"
+    - "review or exception request path when replacement is not possible"
+    - "feature impact and residual risk"
+
+known_boundaries:
+  - "The harness cannot stop direct terminal installs performed outside the harness."
+  - "The harness cannot retroactively prove already-installed packages are safe."
+  - "The harness cannot control IDE/agent tools that bypass this harness."
+  - "Users with filesystem access may edit local policy files; release gates must therefore re-check evidence."
+  - "The harness reports registry/checker unavailability but does not implement registry fail-open/fail-safe logic itself; it enforces the checker verdict/result state."

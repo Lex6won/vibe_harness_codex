@@ -1,4 +1,9 @@
-﻿runtime:
+source_priority:
+  - "../institution-profile.yaml"
+  - "runtime-env.yaml defaults"
+note: "기관별 개발/운영 서버, 언어, DBMS 제한은 shared/institution-profile.yaml을 우선 적용한다. 이 파일은 공통 기본값이다."
+
+runtime:
   python: "3.12"
   node: "20"
   postgresql: "16"

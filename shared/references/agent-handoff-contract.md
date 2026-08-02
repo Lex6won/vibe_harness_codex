@@ -18,6 +18,7 @@
 | `decisions` | 이번 단계에서 확정한 결정 |
 | `open_questions` | 다음 단계 전에 필요한 질문 |
 | `risk_flags` | 개인정보, 외부통신, 파일업로드, 대민, 패키지 등 |
+| `package_decisions` | 새 패키지, 차단 패키지, 대체 패키지, 검토 필요 상태 |
 | `next_action` | 다음 에이전트가 해야 할 일 |
 
 ## 상태값 의미
@@ -34,7 +35,7 @@
 `intake-guide → stage-advisor → feature-discovery → prd-writer → public-risk-analyst → platform-architect → data-modeler → template-engineer → gg-platform-coder → security-checker → qa-operator → deploy-doc-writer`
 
 - L0이면 PRD/feature brief까지 완료 가능.
-- L1이면 	hin-l1-policy.md에 따라 feature brief, 최소 manifest, source, quick 검사까지만 필수다. pass 상태의 별도 handoff 파일은 생략하고 작업현황 한 줄로 대체할 수 있다.
+- L1이면 `thin-l1-policy.md`에 따라 feature brief, 최소 manifest, source, quick 검사까지만 필수다. pass 상태의 별도 handoff 파일은 생략하고 작업현황 한 줄로 대체할 수 있다.
 - L2이면 standard 검사와 운영환경 문서 갱신 필요.
 - L3이면 release-packager로 승격한다.
 
@@ -62,6 +63,7 @@
 - 개인정보 또는 민감정보가 있는데 저장·권한·마스킹 기준이 없음.
 - 행정망 서비스에 외부 CDN/API/LLM/MCP가 필수인데 대체안 또는 예외신청이 없음.
 - denied 패키지를 요구함.
+- denied/unknown/restricted 패키지를 요구했지만 `shared/references/package-alternatives.yaml` 기준 대체안, 기능 축소안, 예외/검토 요청 중 하나가 기록되지 않음.
 - 보안검증 결과가 block인데 수정 없이 다음 단계로 가려 함.
 - 배포·이관 요청인데 필수 산출물 또는 MCP 결과가 없음.
 
@@ -69,6 +71,7 @@
 
 - 최신 사용자 요청이 우선이다.
 - 보안/운영 기준과 사용자 요청이 충돌하면 기준을 우선하고 대체안을 제시한다.
+- 패키지 정책과 기능 요구가 충돌하면 먼저 표준 라이브러리, 골든 템플릿 기본 패키지, 승인 core 패키지 순으로 대체하고, 그래도 불가능할 때만 예외신청으로 보낸다.
 - 에이전트 판단이 충돌하면 `stage-advisor`가 성숙도, `public-risk-analyst`가 위험등급, `platform-architect`가 기술 Track, `security-checker`가 검증 결과의 최종 근거가 된다.
 
 ## 최소 원칙

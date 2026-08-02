@@ -1,0 +1,76 @@
+harness_version: 1
+name: "public-vibecode-harness"
+
+profile:
+  institution_profile: "shared/institution-profile.yaml"
+  maturity_model: "shared/references/service-maturity-model.md"
+  network_profile: "shared/references/network-profile.yaml"
+  permission_model: "shared/references/permission-model.yaml"
+
+adapters:
+  codex: "AGENTS.md"
+  codex_adapter_note: "adapters/codex/AGENTS.md"
+  claude_code_compatibility: "adapters/claude-code/CLAUDE.md"
+  claude_code_generated_copy: ".claude/"
+  lovable: "adapters/lovable/lovable-knowledge.template.md"
+
+references:
+  agent_handoff_contract: "shared/references/agent-handoff-contract.md"
+  approved_tracks: "shared/references/approved-tracks.yaml"
+  lifecycle_quality_gates: "shared/references/lifecycle-quality-gates.yaml"
+  approved_packages: "shared/references/approved-packages.yaml"
+  package_denylist: "shared/references/package-denylist.yaml"
+  runtime_selection_policy: "shared/references/runtime-selection-policy.yaml"
+  package_governance: "shared/references/package-governance.yaml"
+  harness_enforcement_contract: "shared/references/harness-enforcement-contract.yaml"
+  package_alternatives: "shared/references/package-alternatives.yaml"
+  trusted_registry_integration: "shared/references/trusted-registry-integration.yaml"
+  checker_integration: "shared/references/checker-integration.md"
+  checker_bootstrap_policy: "shared/references/checker-bootstrap-policy.md"
+
+enforcement:
+  default_mode: "MONITOR"
+  rollout_after: "security/operations confirmation; recommended MONITOR 2 weeks then WARN"
+  verdict_source: "vibecode-checker/gvskb"
+  registry_access: "checker-mediated-only"
+  implementation_languages:
+    - "python"
+    - "javascript"
+  absolute_block_verdicts:
+    - "malicious"
+    - "registry_rejected"
+    - "not_found"
+  absolute_block_flags:
+    - "in_kev"
+  default_env_grade:
+    personal_pc_harness: "E1"
+    internal_server_or_ci: "E2"
+    citizen_or_sensitive_operation: "E3"
+
+permissions:
+  default_mode: "read-first"
+  model: "shared/references/permission-model.yaml"
+  requires_user_approval:
+    - "external_network"
+    - "production_deploy"
+    - "repository_push"
+    - "send_message_to_external_user"
+    - "delete_or_overwrite_outside_workspace"
+
+safe_outputs:
+  workspace: "_workspace/"
+  source: "_workspace/source/"
+  package: "dist/"
+  report_artifact_ids:
+    - "security_report"
+    - "mcp_result_report"
+    - "deployment_guide"
+    - "exception_request"
+
+validation:
+  local: "shared/scripts/gg-validate.ps1"
+  eval: "shared/scripts/gg-eval.ps1"
+  checker_bootstrap: "shared/scripts/checker-bootstrap.mjs"
+  package_catalog_export: "shared/scripts/package-catalog-export.mjs"
+  manifest_schema: "shared/templates/vibecode-manifest.schema.json"
+  institution_profile_schema: "shared/templates/institution-profile.schema.json"

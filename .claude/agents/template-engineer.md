@@ -12,6 +12,7 @@ tools: [Read, Write]
 ## 입력
 - `_workspace/00_feature_brief.md`
 - `_workspace/04_개발스택_운영환경.md` 있으면 우선 사용
+- `shared/institution-profile.yaml`
 - `shared/references/approved-tracks.yaml`
 - `shared/references/thin-l1-policy.md`
 - `shared/golden-templates/*`
@@ -25,7 +26,7 @@ tools: [Read, Write]
 - 문서검색/RAG 후보: `gg-rag` 단, 초기에는 외부 LLM 없는 로컬 검색만
 
 ## 절차
-1. Track과 기능 요구를 보고 템플릿을 선택한다.
+1. 기관 프로파일에서 활성화된 Track과 기능 요구를 보고 템플릿을 선택한다.
 2. 선택 템플릿이 README뿐인지 확인한다. README뿐이면 `status=block`으로 멈춘다.
 3. 템플릿의 `/health`, Dockerfile, dependency file, `.env.example` 존재를 확인한다.
 4. `_workspace/source`에 복사한다.

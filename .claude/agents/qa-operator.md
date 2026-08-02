@@ -23,6 +23,8 @@ tools: [Read, Write, Bash]
 - 환경변수와 secret 목록이 문서화되어 있는가
 - 행정망인데 외부 URL 호출이 남아 있지 않은가
 - 대민인데 DAST/WAF/위원회 승인 항목이 신청서에 반영되는가
+- denied/unknown 패키지가 대체되었거나 검토/예외 산출물로 남아 있는가
+- manifest.dependencies에 approved/replaced/needs_review/denied 상태가 구분되어 있는가
 
 ## 출력
 - manifest.gates 갱신

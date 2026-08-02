@@ -2,7 +2,29 @@
 
 공무원 바이브코딩을 **접수 → 목표 단계 판정 → 결과물 구상 → PRD → 설계 → 개발 → 보안검증 → 배포/이관 산출물**로 수행하는 전문 에이전트 팀이다.
 
-하네스의 목적은 공무원이 보안, 서버, OS, DB, 패키지 정책을 몰라도 원하는 업무 도구를 설명하면 경기도 운영환경에 맞는 결과물이 나오도록 돕는 것이다. 다만 목표는 “공무원이 정식 서비스를 혼자 끝까지 만든다”가 아니다. 더 정확한 목표는 **공무원이 업무 아이디어를 구체화하고 안전한 시제품·내부도구를 만들며, 정식 운영이 필요할 때 운영팀과 보안팀이 이어받을 수 있는 표준 산출물과 검증 결과를 남기게 하는 것**이다.
+하네스의 목적은 공무원이 보안, 서버, OS, DB, 패키지 정책을 몰라도 원하는 업무 도구를 설명하면 해당 기관 운영환경에 맞는 결과물이 나오도록 돕는 것이다. 다만 목표는 “공무원이 정식 서비스를 혼자 끝까지 만든다”가 아니다. 더 정확한 목표는 **공무원이 업무 아이디어를 구체화하고 안전한 시제품·내부도구를 만들며, 정식 운영이 필요할 때 운영팀과 보안팀이 이어받을 수 있는 표준 산출물과 검증 결과를 남기게 하는 것**이다.
+
+## 기관 프로파일
+
+기관별 개발서버, 운영서버, 허용 언어, DBMS, 플러그인, 라이브러리 제한의 최우선 기준은 `shared/institution-profile.yaml`이다. 다른 시군·기관으로 옮길 때는 이 파일만 먼저 수정한다.
+
+`shared/references/runtime-env.yaml`, `approved-tracks.yaml`, `approved-packages.yaml`은 공통 기본값과 카탈로그다. 에이전트는 기관 프로파일을 먼저 읽고, 비어 있는 값만 공통 reference로 보완한다.
+
+AI 도구가 공통으로 읽을 선언 파일은 `shared/harness.yaml`이다. 권한, 안전한 산출물 경로, 외부 쓰기 제한은 `shared/references/permission-model.yaml`을 따른다.
+
+## 체커·레지스트리·하네스 책임 경계
+
+하네스는 패키지 분석기나 레지스트리 클라이언트가 아니다. 레지스트리는 PyPI/npm 패키지 허용·불허·보류 결정을 관리하고, `vibecode-checker(gvskb)`는 레지스트리 결과와 취약점·악성·cooldown·캐시 상태를 합쳐 단일 `verdict`를 반환한다. 하네스는 그 `verdict`를 사용자와 코딩 에이전트에게 실제로 적용하는 집행 계층이다.
+
+- 정상 패키지 결정 경로: 하네스 → `vibecode-checker/gvskb` → 레지스트리 → `vibecode-checker/gvskb` → 하네스
+- 하네스는 일반 패키지 판정 목적으로 레지스트리를 직접 호출하지 않는다.
+- `malicious`, `registry_rejected`, `not_found`, `in_kev=true`는 모든 모드에서 차단한다.
+- 기본 enforcement mode는 초기 도입 시 `MONITOR`다. 권장 운영안은 MONITOR 2주 관찰 후 보안·운영 확인을 거쳐 `WARN`으로 전환하는 것이다. 기관 정책에 따라 `MONITOR`, `WARN`, `ENFORCE`로 조정한다.
+- 개인 PC 반복 사용은 기본 E1, 내부 서버/CI는 E2, 대민·개인정보·인증·핵심 행정정보는 E3로 본다.
+- 차단 시에는 대체 패키지, 표준 라이브러리 구현, 안전 버전, cooldown 대기일, 검토요청 또는 예외신청 경로를 반드시 제시한다.
+- 기존 패키지의 타이포스쿼팅 휴리스틱은 하네스에서 경고로만 처리한다. 레지스트리는 자동 승인을 보류해 `UNDER_REVIEW`로 보낼 수 있다.
+
+기능 구현 언어는 Python과 JavaScript로 제한한다. TypeScript, Java, Go, PHP, Ruby, C#, Rust 등은 기관 예외가 없는 한 구현 소스로 만들지 않는다.
 
 ## 성숙도 단계
 
@@ -90,6 +112,10 @@ stage-advisor
 9. **안 됩니다로 끝내지 않는다.** 항상 승인 Track 전환, self-host, 예외신청, 대체 패키지를 제안한다.
 10. **수정 개발은 가볍게 한다.** 전체 재설계를 강요하지 말고 변경 범위, 패키지, DB, 보안 영향만 확인한다.
 11. **개발 완료, 제출 준비, 승인 완료를 구분한다.** 하네스는 승인 완료를 단독 선언하지 않는다.
+12. **외부 쓰기는 사용자 승인 전 금지한다.** GitHub push, 운영 배포, 외부 메시지 발송, 외부 시스템 변경은 명시 요청 없이는 하지 않는다.
+13. **패키지 판정은 체커 verdict를 집행한다.** 레지스트리 직접 조회가 아니라 gvskb 결과의 `verdict`, `checked`, `registry_status`, `in_kev`, `cooldown`, `intel_cache`를 보고 판단한다.
+14. **구현 언어는 Python/JavaScript만 쓴다.** 다른 언어가 필요하면 승인 트랙으로 재설계하거나 검토 필요로 표시한다.
+15. **체커가 없으면 사용자에게 설치 확인을 받는다.** 사용자 동의 전 GitHub clone, pip install, MCP 설정 변경을 하지 않는다. 기본 출처는 `https://github.com/Lex6won/vibecode-checker`다.
 
 ## 핸드오프 계약
 
@@ -132,13 +158,22 @@ stage-advisor
 - `shared/references/service-maturity-model.md`: L0~L4 성숙도 단계
 - `shared/references/user-experience-policy.md`: 공무원 친화 질문과 기본안 제시 원칙
 - `shared/references/pilot-evaluation-metrics.md`: 파일럿 평가 기준
+- `shared/institution-profile.yaml`: 기관별 개발/운영 서버, 언어, DBMS, 플러그인, 라이브러리 제한
+- `shared/harness.yaml`: 도구 중립 하네스 선언
+- `shared/references/permission-model.yaml`: 단계별 권한과 safe output 정책
 - `shared/references/network-profile.yaml` 또는 `.claude/references/deploy-context.yaml`: 행정망/외부망 분기
 - `shared/references/data-traffic-light.yaml`: 데이터 신호등
-- `shared/references/approved-tracks.yaml`: Track과 미승인 전환
-- `shared/references/runtime-env.yaml`: Python 3.12, Node 20, PostgreSQL 16, `/apps/<project>/`, `/health`, 로그
-- `shared/references/approved-packages.yaml`: 승인 패키지 카탈로그
+- `shared/references/approved-tracks.yaml`: Track 카탈로그와 미승인 전환
+- `shared/references/runtime-env.yaml`: 공통 runtime 기본값
+- `shared/references/approved-packages.yaml`: 공통 승인 패키지 카탈로그
 - `shared/references/package-denylist.yaml`: 위험 패키지·패턴
 - `shared/references/package-risk-policy.md`: 패키지 등급, 예외, 관리 원칙
+- `shared/references/harness-enforcement-contract.yaml`: 체커·레지스트리·하네스 집행 계약, mode/env_grade/verdict 매핑
+- `shared/references/package-governance.yaml`: 패키지 검토·대체·플랫폼 이관 기준
+- `shared/references/package-alternatives.yaml`: 차단/보류 패키지 대체 경로
+- `shared/references/trusted-registry-integration.yaml`: 체커 매개 레지스트리 연계 기준
+- `shared/references/checker-integration.md`: gvskb 호출·해석 기준
+- `shared/references/checker-bootstrap-policy.md`: vibecode-checker 미설치 시 사용자 확인과 GitHub 기반 설치/준비 기준
 
 ## 사용자에게 물어도 되는 질문
 

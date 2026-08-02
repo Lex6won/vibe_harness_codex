@@ -28,8 +28,9 @@
 2. AI가 화면, 입력, 처리, 출력, 저장 여부를 구체화한다.
 3. 공공 운영환경에 맞는 Track, 인증, DB, 패키지, 네트워크 기준을 자동으로 적용한다.
 4. 골든 템플릿 안에서만 구현해 기술스택이 임의로 흐르지 않게 한다.
-5. 개발 중에는 가볍게, 배포·이관 시에는 엄격하게 산출물을 만든다.
-6. 운영팀·보안팀이 이어받을 수 있도록 PRD, DB정의서, 개발스택, 보안점검, 배포가이드, 신청서를 남긴다.
+5. 위험한 패키지·플러그인·외부서비스가 막히더라도 승인된 대체 패키지나 대체 구현 경로를 제시한다.
+6. 개발 중에는 가볍게, 배포·이관 시에는 엄격하게 산출물을 만든다.
+7. 운영팀·보안팀이 이어받을 수 있도록 PRD, DB정의서, 개발스택, 보안점검, 배포가이드, 신청서를 남긴다.
 
 즉, 이 하네스는 **공무원 친화적인 업무 구상 경험**과 **공공 운영에 필요한 절차·증거 체인**을 동시에 만족시키기 위한 실행 구조입니다.
 
@@ -38,38 +39,108 @@
 | 항목 | 내용 |
 |---|---:|
 | 전문 에이전트 | 16개 |
-| 스킬 | 14개 |
+| 스킬 | 15개 |
 | 골든 템플릿 | 6개 |
 | 성숙도 단계 | L0~L4 |
+| Codex 최상위 진입점 | `AGENTS.md` |
+| 기관별 단일 설정 파일 | `shared/institution-profile.yaml` |
+| 벤더 중립 선언 파일 | `shared/harness.yaml` |
+| 런타임 선택 정책 | `shared/references/runtime-selection-policy.yaml` |
+| 생명주기 품질 게이트 | `shared/references/lifecycle-quality-gates.yaml` |
+| 하네스 집행 계약 | `shared/references/harness-enforcement-contract.yaml` |
+| 패키지 거버넌스 | `shared/references/package-governance.yaml` |
+| 패키지 대체안 정책 | `shared/references/package-alternatives.yaml` |
+| Registry 연계 정책 | `shared/references/trusted-registry-integration.yaml` |
 | 주요 네트워크 프로파일 | 행정망 / DMZ·외부망 / 인터넷 시제품 |
 | 검증 스크립트 | `shared/scripts/gg-validate.ps1` |
+| 체커 설치 보조 | `shared/scripts/checker-bootstrap.mjs` |
+| 레지스트리 카탈로그 export | `shared/scripts/package-catalog-export.mjs` |
+
+## 기관별 적용
+
+다른 시군·기관에서 사용할 때는 먼저 아래 파일 하나를 기관 환경에 맞게 수정합니다.
+
+```text
+shared/institution-profile.yaml
+```
+
+이 파일에 개발서버와 운영서버 환경, 허용 개발언어, 허용 DBMS, 사용 가능한 AI 도구·MCP·플러그인, 추가 허용/제한/차단 라이브러리를 적습니다. 하네스는 이 파일을 최우선 기준으로 보고, `shared/references/`의 파일들은 공통 기본값과 카탈로그로만 사용합니다.
+
+기관별로 자주 바꾸는 항목은 다음입니다.
+
+- 개발환경: 개발 PC/개발망, 인터넷 접근, 패키지 설치 방식, 개발용 DBMS
+- 운영환경: 운영망/DMZ, OS, 컨테이너 런타임, 설치 경로, healthcheck, 로그
+- 기술 제한: Python/JavaScript(Node.js) 허용 언어와 버전, PostgreSQL/SQLite 등 DBMS 허용 범위
+- 플러그인/MCP: Codex, Claude Code, Lovable, GitHub, 문서 연동, `vibecode-checker` 사용 정책
+- 라이브러리: 공통 승인 패키지 외 기관별 추가 허용/제한/차단 목록
+- 서버 프로파일: small/standard/large_or_special 등 CPU·메모리 기준과 권장 서비스 유형
+
+작성 기준은 `shared/references/institution-profile-guide.md`에 정리되어 있습니다.
+
+개발언어는 사용자가 직접 고르게 하기보다, 기관 프로파일과 서버 사양을 기준으로 하네스가 먼저 추천합니다. 이 기준은 아래 파일에 있습니다.
+
+```text
+shared/references/runtime-selection-policy.yaml
+```
+
+예를 들어 내부 대시보드는 작은 서버에서 Streamlit/Python 후보가 우선이고, 파일 업로드나 내부 CRUD 웹은 Nginx + FastAPI + PostgreSQL 후보가 우선입니다. React가 필요한 경우에도 구현 소스는 JavaScript로 제한하고, Node.js는 운영 런타임이라기보다 정적 빌드 도구로 다루며, 운영은 Nginx 정적 파일 + 승인 백엔드 구조를 우선합니다.
+
+AI 도구가 공통으로 읽을 하네스 선언은 아래 파일에 있습니다.
+
+```text
+shared/harness.yaml
+```
+
+이 파일은 기관 프로파일, 주요 reference, 어댑터, 권한 모델, 안전한 산출물 경로, 검증 스크립트를 한곳에 묶습니다.
+
+## Codex와 Claude Code 분리 원칙
+
+이 저장소의 중심은 Codex용 하네스입니다.
+
+- Codex 기준 원본: `AGENTS.md`, `shared/`, `shared/harness.yaml`
+- 기관별 설정: `shared/institution-profile.yaml`
+- 권한과 safe output: `shared/references/permission-model.yaml`
+- Claude Code 호환본: `.claude/`
+
+`.claude/`는 Claude Code가 바로 읽을 수 있게 둔 호환본입니다. Claude가 별도 하네스를 관리한다면 이 저장소의 `.claude/`는 참고용으로만 보고, Codex 하네스의 원본 기준으로 보지 않습니다.
 
 ## 전체 구조
 
 ```text
 vibe_harness_codex/
-├── .claude/
-│   ├── CLAUDE.md                     # 최상위 운영 지침
-│   ├── agents/                       # 전문 에이전트 팀
-│   ├── skills/                       # 오케스트레이터·보조 스킬
-│   ├── references/                   # 호환용 reference
-│   └── assets/                       # 코칭 메시지 등
+├── AGENTS.md                         # Codex 최상위 진입점
 ├── shared/
+│   ├── institution-profile.yaml      # 기관별 단일 설정 파일
+│   ├── harness.yaml                  # 도구 중립 하네스 선언
 │   ├── golden-templates/             # 구현 가드레일이 담긴 실행 템플릿
 │   ├── references/                   # 정책·운영·보안 기준
 │   ├── scripts/                      # 검증·패키징 스크립트
 │   └── templates/                    # PRD/설계/검증/신청 산출물 템플릿
-├── adapters/                         # Claude Code, Codex, Cursor, Lovable 어댑터
+├── adapters/                         # Codex, Claude Code, Lovable 어댑터
+├── .claude/                         # Claude Code 호환본, Codex 원본 아님
+│   ├── CLAUDE.md                     # Claude Code 호환본
+│   ├── agents/                       # Claude Code용 전문 에이전트 복사본
+│   └── skills/                       # Claude Code용 스킬 복사본
 ├── evals/                            # 대표 평가 시나리오
 └── .github/workflows/                # CI 검증 초안
 ```
 
-핵심 진입점은 다음입니다.
+Codex 기준 핵심 진입점은 다음입니다.
+
+```text
+AGENTS.md
+shared/harness.yaml
+shared/institution-profile.yaml
+shared/references/permission-model.yaml
+```
+
+`.claude/`는 Claude Code에서 같은 하네스를 실행하기 위한 호환본입니다. Codex 하네스의 원본 기준은 아닙니다.
+
+Claude Code 호환 진입점은 다음입니다.
 
 ```text
 .claude/CLAUDE.md
 .claude/skills/gg-vibecode/skill.md
-.claude/skills/gg-vibe/SKILL.md
 ```
 
 ## 작동 흐름
@@ -109,18 +180,24 @@ intake-guide
 
 ## 사용 방법
 
-### 1. 하네스 복사
+### 1. Codex용 하네스 복사
 
-새 프로젝트에 `.claude`와 `shared`를 복사합니다.
+새 프로젝트에 `AGENTS.md`와 `shared`를 복사합니다.
+
+```powershell
+Copy-Item AGENTS.md C:\path\to\your-project\AGENTS.md
+Copy-Item -Recurse shared C:\path\to\your-project\shared
+```
+
+Claude Code용으로 사용할 때만 `.claude`를 복사합니다. Claude가 별도 하네스를 관리한다면 `.claude`는 이 저장소에서 사용하지 않아도 됩니다.
 
 ```powershell
 Copy-Item -Recurse .claude C:\path\to\your-project\.claude
-Copy-Item -Recurse shared C:\path\to\your-project\shared
 ```
 
 ### 2. AI 도구에서 시작
 
-Claude Code, Codex, Cursor 등에서 다음처럼 요청합니다.
+Codex 또는 Claude Code 등에서 다음처럼 요청합니다.
 
 ```text
 우리 부서에서 엑셀 민원 현황 파일을 올리면 담당자별 처리 건수와 지연 건수를 대시보드로 보고 싶어.
@@ -138,7 +215,11 @@ Claude Code, Codex, Cursor 등에서 다음처럼 요청합니다.
 이제 이 프로그램을 공식 개발환경으로 넘기고 보안성검토 신청 자료를 만들고 싶어.
 ```
 
-### 3. 검증 실행
+### 3. 기관 프로파일 수정
+
+새 시군·기관에 적용할 때는 `shared/institution-profile.yaml`에서 기관명, 개발/운영 서버, 언어·DBMS 제한, 사용 가능한 플러그인과 라이브러리 정책을 먼저 바꿉니다.
+
+### 4. 검증 실행
 
 하네스 구조를 검증합니다.
 
@@ -266,6 +347,8 @@ L1은 `shared/references/thin-l1-policy.md`에 따라 문서와 에이전트 홉
 
 ## Agent Team
 
+아래 16개 역할은 하네스의 논리적 팀 구조입니다. Codex에서는 `AGENTS.md`와 `shared/` 정책으로 이 역할을 따르고, Claude Code에서는 `.claude/agents/` 호환본으로 같은 역할을 실행합니다.
+
 | 에이전트 | 역할 |
 |---|---|
 | `intake-guide` | 사용자 범위와 작업 모드 접수 |
@@ -287,6 +370,8 @@ L1은 `shared/references/thin-l1-policy.md`에 따라 문서와 에이전트 홉
 
 ## Skill System
 
+스킬 계층은 Claude Code 호환본에 실제 파일로 들어 있습니다. Codex에서는 같은 정책을 루트 `AGENTS.md`, `shared/harness.yaml`, `shared/references/`를 통해 읽습니다.
+
 `harness-100`의 계층형 스킬 구조를 참고해 다음처럼 나눴습니다.
 
 | 계층 | 스킬 | 역할 |
@@ -306,7 +391,7 @@ L1은 `shared/references/thin-l1-policy.md`에 따라 문서와 에이전트 홉
 | `gg-webapp` | FastAPI 기반 내부 웹/API |
 | `gg-dashboard` | Streamlit 기반 내부 대시보드 |
 | `gg-upload` | 파일 업로드/검증 도구 |
-| `gg-node-api` | Node 20 + Express API |
+| `gg-node-api` | 기관 프로파일의 Node 버전 + Express API |
 | `gg-spa` | React + Vite 정적 SPA |
 | `gg-rag` | 외부 LLM 없는 폐쇄망 우선 문서검색 템플릿 |
 
@@ -322,10 +407,28 @@ L1은 `shared/references/thin-l1-policy.md`에 따라 문서와 에이전트 홉
 - Scale Modes: L1 thin mode / L2 internal tool / L3 release readiness
 - Error Handling: `pass`, `warn`, `block`, `needs-user`, `done` 상태값
 - Public-Sector Guardrails: 행정망/DMZ 분기, CDN·외부 API·패키지 정책, MCP 검증
+- Runtime Selection: 서버 사양과 기관 정책 기반 언어·프레임워크·DBMS 추천
+- Package Governance: MCP 증거, 담당자 검토, 향후 플랫폼 연계를 분리
+- Package Replacement: 차단/보류 패키지에 대해 표준 라이브러리, 골든 템플릿, 승인 core 패키지, 조건부 패키지, 기능 축소안을 순서대로 제안
+- Lifecycle Gates: 아이디어·설계·구현·테스트·배포 단계별로 필요한 만큼만 산출물을 만들고 위험할 때만 승격
+- Safe Outputs: 권한 모델과 허용 산출물 경로를 분리해 외부 쓰기·배포·푸시를 통제
 - Golden Templates: 승인 Track에 맞는 템플릿 안에서 구현
 - Validation: `gg-validate.ps1`와 GitHub Actions 초안
 
 ## Network and Security Policy
+
+기관별 운영환경과 도구 제한의 단일 원본은 다음입니다.
+
+```text
+shared/institution-profile.yaml
+```
+
+AI 도구별 실행 컨텍스트와 안전한 출력 경로의 요약 원본은 다음입니다.
+
+```text
+shared/harness.yaml
+shared/references/permission-model.yaml
+```
 
 네트워크/배포 정책의 단일 원본은 다음입니다.
 
@@ -342,24 +445,97 @@ shared/references/network-profile.yaml
 - 대민 서비스는 WAF/DAST/위원회 승인 플래그가 필요합니다.
 - 보안검사 로직은 하네스가 직접 구현하지 않고 `vibecode-checker` 결과를 사용합니다.
 
-## Package Policy
+## Checker·Registry·Package Policy
 
-초기 패키지 정책은 하네스 내부 고정 화이트리스트가 아니라 별도 GitHub 저장소에서 운영하는 것을 권장합니다.
+패키지 정책은 하네스 내부 고정 화이트리스트만으로 운영하지 않습니다. 체커와 레지스트리 서비스가 함께 판단하고, 하네스는 그 결과를 사용자 단에서 집행합니다.
 
-하네스는 생성된 결과 파일만 참조합니다.
+역할은 이렇게 나눕니다.
+
+1. 레지스트리 서비스: Python(PyPI)과 JavaScript/npm 패키지의 허용·불허·보류·조건부 승인 목록을 관리한다.
+2. `vibecode-checker/gvskb`: 레지스트리 결정, 취약점, 악성 패키지, cooldown, 캐시 신선도를 합쳐 단일 `verdict`를 반환한다.
+3. 하네스: `verdict`를 받아 설치·사용·배포 이관을 pass/warn/block으로 제한한다.
+
+하네스는 일반 패키지 결정을 위해 레지스트리를 직접 호출하지 않습니다. 정상 경로는 하네스 → `vibecode-checker/gvskb` → 레지스트리 → `vibecode-checker/gvskb` → 하네스입니다.
+
+패키지 상태와 승인 흐름의 기준은 다음입니다.
 
 ```text
-generated/package-policy.json
+shared/references/harness-enforcement-contract.yaml
+shared/references/package-governance.yaml
 ```
 
-초기 방향:
+`malicious`, `registry_rejected`, `not_found`, `in_kev=true`는 모든 모드에서 차단합니다. `not_found`는 공식 저장소 부재이므로 AI가 지어낸 패키지명 또는 slopsquatting 위험으로 보고 설치하지 않습니다.
 
-- 블랙리스트와 위험규칙 중심
-- AI 자동 선별 + 담당자 최종 승인
-- 반복 승인된 패키지를 하버 이미지 후보로 승격
-- 행정망/외부망 기준 분리
+기존 패키지에 대한 타이포스쿼팅 신호는 휴리스틱이므로 하네스에서는 차단하지 않고 경고합니다. 레지스트리는 같은 신호를 근거로 자동 승인을 보류하고 `UNDER_REVIEW`로 보낼 수 있습니다.
 
-관련 설계 자료는 별도 `gg-package-policy-design` 폴더에서 관리합니다.
+레지스트리 실데이터가 적거나 0건인 초기 도입 시에는 기본 mode를 `MONITOR`로 둡니다. 권장안은 MONITOR 2주 관찰 후 보안·운영 확인을 거쳐 `WARN`으로 전환하는 것입니다. `ENFORCE`는 직접 의존성 기준 unknown 비율 또는 상위 패키지 등록량 같은 커버리지 기준이 충족된 뒤 적용합니다.
+
+MCP 검사 결과가 깨끗하더라도 안전 증명이나 공식 승인으로 기록하지 않습니다. 담당자, 레지스트리 서비스, 또는 향후 플랫폼이 최종적으로 `approved`, `restricted`, `denied`를 결정합니다.
+
+패키지가 차단되거나 보류되면 하네스는 바로 예외신청으로 가지 않습니다. 먼저 아래 순서로 코딩 가능한 대체안을 찾습니다.
+
+1. 표준 라이브러리 또는 플랫폼 기본 기능
+2. 골든 템플릿에 이미 포함된 패키지
+3. 승인 core 패키지
+4. 조건을 기록한 restricted 패키지
+5. checker가 제시한 안전 버전
+6. cooldown 대기 후 재검토
+7. 기능 범위 축소를 통한 no-new-package 구현
+8. 그래도 불가능할 때 패키지 검토 요청 또는 예외신청
+
+향후 플랫폼 연계는 아래 순서를 권장합니다.
+
+- 1단계: 하네스가 JSON 검토 요청을 `outbox/package-review-requests/`에 생성하고 플랫폼이 수집
+- 2단계: 플랫폼 API가 안정되면 인증·감사로그·멱등키를 갖춘 REST API로 전송
+- 3단계: 대량 처리가 필요하면 내부 메시지 큐 사용
+- 직접 DB write는 플랫폼이 스키마와 서비스 계정 정책을 제공할 때만 제한적으로 사용
+
+## vibecode-checker 설치/연결
+
+보안점검과 패키지 검사는 `vibecode-checker/gvskb`가 수행합니다. 하네스는 체커가 없을 때 자동으로 설치하지 않고, 사용자에게 먼저 확인합니다.
+
+기본 설치 출처는 다음 GitHub 저장소입니다.
+
+```text
+https://github.com/Lex6won/vibecode-checker
+```
+
+체커가 연결되어 있지 않으면 하네스는 다음을 안내합니다.
+
+```text
+보안점검용 vibecode-checker가 현재 연결되어 있지 않습니다.
+기획·설계는 계속할 수 있지만, 패키지 검사와 보안점검 완료 처리는 체커 연결 후 가능합니다.
+
+GitHub https://github.com/Lex6won/vibecode-checker 를 기준으로 로컬에 설치/준비할까요?
+```
+
+설치 보조 스크립트는 JavaScript로 제공됩니다. 기본 실행은 설치하지 않고 계획만 보여줍니다.
+
+```powershell
+node .\shared\scripts\checker-bootstrap.mjs --target .\tools\vibecode-checker
+```
+
+사용자가 확인한 뒤에는 `--yes`를 붙입니다.
+
+```powershell
+node .\shared\scripts\checker-bootstrap.mjs --target .\tools\vibecode-checker --yes
+```
+
+Python 패키지 설치까지 하려면 별도 확인 후 `--install-python`을 추가합니다.
+
+```powershell
+node .\shared\scripts\checker-bootstrap.mjs --target .\tools\vibecode-checker --yes --install-python
+```
+
+망분리/offline 모드에서는 GitHub clone을 시도하지 않고, 외부망에서 받은 폴더를 반입해 로컬 경로로 지정합니다.
+
+레지스트리 초기 반입용 카탈로그는 현재 승인/차단 seed에서 생성할 수 있습니다.
+
+```powershell
+node .\shared\scripts\package-catalog-export.mjs --root . --out .\generated\package-catalog.export.json
+```
+
+이 export에서 승인목록은 `APPROVED` 또는 `CONDITIONAL`, 차단목록은 `REJECTED`로 나갑니다. 카탈로그에 없는 패키지는 차단이 아니라 `UNKNOWN`입니다.
 
 ## Validation
 
@@ -367,6 +543,12 @@ generated/package-policy.json
 
 ```powershell
 powershell.exe -ExecutionPolicy Bypass -File .\shared\scripts\gg-validate.ps1 -Root . -Level L1
+```
+
+평가 케이스 구조 검증:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File .\shared\scripts\gg-eval.ps1 -Root .
 ```
 
 패키징:
@@ -383,7 +565,10 @@ CI 초안:
 
 ## Current Status
 
+- Codex 루트 진입점 `AGENTS.md` 추가 완료
 - 하네스 구조, 에이전트, 스킬, 핸드오프 계약 정리 완료
+- 기관별 단일 설정 파일 `shared/institution-profile.yaml` 추가 완료
+- 벤더 중립 선언 `shared/harness.yaml`, 권한 모델, eval 구조 검증 추가 완료
 - 6개 골든 템플릿 최소 코드 추가 완료
 - L1 thin mode 추가 완료
 - canonical network profile 정리 완료

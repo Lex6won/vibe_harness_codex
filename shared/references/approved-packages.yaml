@@ -1,4 +1,9 @@
-﻿policy: 넓은 승인, 강한 차단
+source_priority:
+  - "../institution-profile.yaml libraries"
+  - "approved-packages.yaml catalog"
+note: "기관별 추가 허용/제한/차단 패키지는 shared/institution-profile.yaml에만 적는다. 이 파일은 공통 패키지 카탈로그다."
+
+policy: 넓은 승인, 강한 차단
 version: draft-0.1
 python:
   core:
@@ -28,7 +33,7 @@ npm_frontend:
     - react
     - react-dom
     - vite
-    - typescript
+    - '@vitejs/plugin-react'
     - react-router-dom
     - lucide-react
     - recharts

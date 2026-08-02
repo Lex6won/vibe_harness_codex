@@ -16,12 +16,33 @@ $manifest = [ordered]@{
   next_gate = "feature-discovery"
   service_exposure = "unknown"
   network_profile = "unknown"
+  institution_profile = @{
+    path = "shared/institution-profile.yaml"
+    institution_code = "unknown"
+    environment = "unknown"
+  }
   runtime_external_access = "unknown"
   data_level = "unknown"
   track = "unknown"
+  runtime = @{}
+  enforcement = @{
+    mode = "MONITOR"
+    env_grade = "unknown"
+    verdict_source = "vibecode-checker/gvskb"
+    registry_access = "checker-mediated-only"
+    implementation_languages = @("python", "javascript")
+  }
+  plugins = @{}
+  dependencies = @{}
   feature_discovery = @{}
   artifacts = @{}
   security_check = @{}
+  checker_bootstrap = @{
+    checker_status = "unknown"
+    checker_source = "unknown"
+    checker_repository = "https://github.com/Lex6won/vibecode-checker"
+    install_user_confirmed = $false
+  }
   pilot_metrics = @{}
   exceptions = @()
   gates = @{}

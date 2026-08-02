@@ -1,4 +1,9 @@
-﻿tracks:
+source_priority:
+  - "../institution-profile.yaml tracks.enabled"
+  - "approved-tracks.yaml catalog"
+note: "기관별 활성 Track과 기본 Track은 shared/institution-profile.yaml에서 조정한다. 이 파일은 Track 카탈로그와 전환 기준이다."
+
+tracks:
   fastapi-web:
     platform_track: A
     stack: Python 3.12 + FastAPI + Jinja2/HTMX
@@ -12,7 +17,7 @@
     denied: [public]
   react-fastapi:
     platform_track: B
-    stack: React Vite TypeScript static + FastAPI
+    stack: React Vite JavaScript static + FastAPI
     templates: [gg-spa]
     allowed: [internal, public-with-review]
   node-api:

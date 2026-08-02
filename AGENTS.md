@@ -1,0 +1,79 @@
+# Codex Public Vibe-Coding Harness
+
+This repository is the Codex-centered public-sector vibe-coding harness.
+
+## Authority Order
+
+Read these files first, in this order:
+
+1. `shared/harness.yaml`
+2. `shared/institution-profile.yaml`
+3. `shared/references/permission-model.yaml`
+4. `shared/references/service-maturity-model.md`
+5. `shared/references/network-profile.yaml`
+6. `shared/references/approved-tracks.yaml`
+7. `shared/references/runtime-selection-policy.yaml`
+8. `shared/references/lifecycle-quality-gates.yaml`
+9. `shared/references/harness-enforcement-contract.yaml`
+10. `shared/references/package-governance.yaml`
+11. `shared/references/package-alternatives.yaml`
+12. `shared/references/trusted-registry-integration.yaml`
+13. `shared/references/approved-packages.yaml`
+14. `shared/references/package-denylist.yaml`
+15. `shared/references/package-risk-policy.md`
+16. `shared/references/checker-integration.md`
+17. `shared/references/checker-bootstrap-policy.md`
+
+The `.claude/` directory is a Claude Code compatibility copy. Do not treat it as the Codex source of truth. For Codex, `AGENTS.md`, `shared/`, and `shared/harness.yaml` are authoritative.
+
+## Operating Rules
+
+- Work in Korean for user-facing public-sector guidance unless the user asks otherwise.
+- Ask business questions in plain administrative language. Do not ask civil servants to choose frameworks, DBMS, auth systems, package managers, or deployment platforms.
+- Start by identifying who will use the system: internal staff, other agencies, or citizens.
+- Classify the maturity level: L0 idea, L1 prototype, L2 internal tool, L3 release candidate, L4 official operation.
+- Use `shared/institution-profile.yaml` for agency-specific development server, production server, language, DBMS, plugin, and library constraints.
+- Use `shared/references/runtime-selection-policy.yaml` to recommend language/framework/DBMS from server size, OS, DBMS, exposure, and service type. Do not ask the user to choose a programming language when policy can decide safely.
+- Use `shared/references/lifecycle-quality-gates.yaml` to keep idea, design, implementation, test, and release work proportional to maturity level.
+- Use `shared/references/harness-enforcement-contract.yaml` before package installation, dependency changes, source checks, and release handoff. The harness enforces checker verdicts; it does not become the checker or registry.
+- Implement functional code only in Python or JavaScript/Node tracks allowed by `shared/institution-profile.yaml`. If the user asks for another implementation language, mark it needs-review and suggest an approved Python or JavaScript path.
+- Use `shared/references/package-governance.yaml` for package status, review workflow, and future platform handoff. `vibecode-checker` / `gvskb` provides the single package/security verdict that the harness enforces; final approval belongs to a human reviewer, registry service, or package governance platform.
+- Use `shared/references/package-alternatives.yaml` before package exceptions. If a package is denied, unknown, or risky, propose a safe replacement or no-new-package implementation path before stopping.
+- Use `shared/references/trusted-registry-integration.yaml` for the checker-mediated registry contract. Do not call a registry service directly for normal package decisions; call `vibecode-checker` / `gvskb`, which returns the registry-backed verdict fields.
+- Treat `malicious`, `registry_rejected`, `not_found`, and `in_kev=true` as absolute blocks in every mode. Typosquat heuristics for an existing package are warnings in the harness, not standalone block reasons.
+- Start registry-backed rollout in MONITOR unless the institution profile explicitly says otherwise. Recommended transition is MONITOR for 2 weeks, then WARN after security/operations confirmation; ENFORCE requires coverage criteria.
+- Determine and record `env_grade` from the target environment: default personal-PC harness work to E1, internal server or CI to E2, and citizen-facing/sensitive operation to E3 evidence-only handoff. Do not let a developer silently downgrade the grade.
+- Use `shared/references/checker-bootstrap-policy.md` when `vibecode-checker` is missing. Ask the user before GitHub clone or package installation. The default source is `https://github.com/Lex6won/vibecode-checker`; in offline mode, require a locally imported folder.
+- Use `shared/golden-templates/` as the starting point for implementation. Do not create an arbitrary stack outside an approved track.
+- Keep generated work inside `_workspace/`, `_workspace/source/`, or `dist/` unless the user explicitly asks otherwise.
+- Do not push to GitHub, deploy to production, send external messages, or write to external systems unless the user explicitly asks for that action.
+- Do not claim official security approval. The harness may say "ready for submission", "missing evidence", or "requires human approval".
+- Never leave a blocked package as a dead end. Record the blocked package, reason, replacement, feature impact, and whether a review or exception is still needed.
+
+## Required Output Chain
+
+For L1 prototypes, keep the minimum evidence chain:
+
+- `_workspace/00_feature_brief.md`
+- `artifact:work_status`
+- `_workspace/source/`
+- `_workspace/vibecode-manifest.json`
+
+For L2/L3, add the appropriate structured artifacts from `shared/templates/`, especially:
+
+- PRD
+- screen and feature design
+- DB table definition when storage is needed
+- development stack and runtime environment
+- security report
+- MCP result report
+- package review request or exception when a new/unknown/restricted/denied package affects implementation
+- deployment guide and request documents when release is requested
+
+## Security
+
+Security checks are performed through `vibecode-checker` / `gov-vibe-security-kb` when available. Builder steps should prevent common risks in code, but the security-checking step interprets the checker result. If the checker is unavailable, continue planning/design work but mark security validation as incomplete.
+
+If the checker is not installed or connected, tell the user that security/package validation cannot be completed yet and ask whether to install or prepare it from `https://github.com/Lex6won/vibecode-checker`. Do not install silently. A helper exists at `shared/scripts/checker-bootstrap.mjs`; it requires explicit `--yes` before cloning and separate `--install-python` before Python package installation.
+
+For package governance, the checker is the only normal integration point. The registry manages PyPI/npm allow and deny decisions, the checker combines that registry result with vulnerability and malicious-package evidence, and the harness enforces the resulting verdict for users and coding agents. A block must always include the blocked item, verdict, applied mode, env_grade, replacement or safe-version path, and review/exception route when needed.

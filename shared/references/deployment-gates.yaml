@@ -1,13 +1,26 @@
-﻿gates:
+gates:
+  G0_lifecycle:
+    description: maturity level, exposure, data level, and lifecycle-quality-gates alignment
+    block: L2/L3 work missing proportional artifacts or risk escalation
+
   G1_template:
     description: approved golden template
+    block: source not based on selected golden template
+
   G2_code:
     description: vibecode-checker plus internal rescan
     official_authority: server_rescan
+    block: unresolved critical/high code, secret, PII, or unsafe external call findings
+
   G3_package:
-    description: internal mirrors, lockfiles, approved packages
+    description: registry or local governance decision, lockfiles, dependency scan evidence, and safe replacements
+    block: denied package, unknown L2/L3 dependency, missing lockfile, blocked package without replacement
+    warn: restricted package without recorded condition
+
   G4_image:
     description: Harbor Trivy image scan
     block: Critical/High CVE
+
   G5_operation:
     description: DEV validation, approval, PRD deploy, DMZ DAST/WAF for public
+    block: production deploy or official approval claimed by harness alone

@@ -12,12 +12,69 @@
     "next_gate": {"type": "string"},
     "service_exposure": {"enum": ["internal-staff", "public-citizen", "hybrid", "unknown"]},
     "network_profile": {"enum": ["admin-network", "dmz-public", "internet-prototype", "unknown"]},
+    "institution_profile": {
+      "type": "object",
+      "properties": {
+        "path": {"type": "string"},
+        "institution_code": {"type": "string"},
+        "environment": {"enum": ["development", "production", "unknown"]}
+      }
+    },
     "runtime_external_access": {"enum": ["none", "approved-proxy", "dmz-only", "pending-exception", "unknown"]},
     "data_level": {"enum": ["green", "yellow", "red", "unknown"]},
     "track": {"enum": ["fastapi-web", "streamlit-internal", "react-fastapi", "node-api", "local-automation", "unknown"]},
+    "runtime": {"type": "object"},
+    "enforcement": {
+      "type": "object",
+      "properties": {
+        "mode": {"enum": ["MONITOR", "WARN", "ENFORCE", "unknown"]},
+        "env_grade": {"enum": ["E0", "E1", "E2", "E3", "unknown"]},
+        "verdict_source": {"type": "string"},
+        "registry_access": {"enum": ["checker-mediated-only", "not-configured", "unknown"]},
+        "implementation_languages": {
+          "type": "array",
+          "items": {"enum": ["python", "javascript"]}
+        },
+        "checker_verdict_summary": {"type": "object"},
+        "registry_status": {"type": "object"},
+        "unchecked_count": {"type": "integer", "minimum": 0},
+        "truncated_count": {"type": "integer", "minimum": 0},
+        "intel_cache_state": {"type": "string"}
+      }
+    },
+    "plugins": {"type": "object"},
+    "dependencies": {
+      "type": "object",
+      "properties": {
+        "requested": {"type": "array"},
+        "approved": {"type": "array"},
+        "restricted": {"type": "array"},
+        "replaced": {"type": "array"},
+        "needs_review": {"type": "array"},
+        "denied": {"type": "array"},
+        "checker_verdicts": {"type": "array"},
+        "replacements": {"type": "array"},
+        "mode_decisions": {"type": "array"},
+        "registry_status": {"type": "object"},
+        "scan_evidence": {"type": "object"}
+      }
+    },
     "feature_discovery": {"type": "object"},
     "artifacts": {"type": "object"},
     "security_check": {"type": "object"},
+    "checker_bootstrap": {
+      "type": "object",
+      "properties": {
+        "checker_status": {"enum": ["connected", "installed", "missing", "failed", "user-declined", "unknown"]},
+        "checker_source": {"enum": ["MCP", "CLI", "GitHub clone", "local path", "unknown"]},
+        "checker_repository": {"type": "string"},
+        "checker_path": {"type": "string"},
+        "checked_at": {"type": "string"},
+        "install_user_confirmed": {"type": "boolean"},
+        "install_result": {"type": "string"},
+        "server_status_result_id": {"type": "string"}
+      }
+    },
     "pilot_metrics": {"type": "object"},
     "exceptions": {"type": "array"},
     "gates": {"type": "object"}

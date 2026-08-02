@@ -17,7 +17,7 @@ tools: [Read, Write, Edit, Bash]
 
 ## 개발 규칙
 - `04_개발스택_운영환경.md`와 manifest의 Track을 바꾸지 않는다. 바꿔야 하면 platform-architect로 돌려보낸다.
-- 새 패키지는 `approved-packages.yaml`과 `package-denylist.yaml`을 먼저 확인한다.
+- 새 패키지는 `shared/institution-profile.yaml`의 라이브러리 정책과 `approved-packages.yaml`, `package-denylist.yaml`을 먼저 확인한다.
 - denied 패키지는 사용하지 않고 대체안을 제안한다.
 - unknown 패키지는 임시 사용하지 않고 예외 후보로 기록한다.
 - 행정망 서비스에는 CDN, 외부 API, 외부 LLM 호출을 추가하지 않는다.

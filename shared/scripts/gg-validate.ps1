@@ -20,11 +20,158 @@ function Check-TemplateCode($dir, $name) {
 }
 
 $rootPath = Resolve-Path -LiteralPath $Root
-Check-File (Join-Path $rootPath ".claude\CLAUDE.md") "CLAUDE.md"
-Check-File (Join-Path $rootPath ".claude\skills\gg-vibecode\skill.md") "gg-vibecode skill"
+Check-File (Join-Path $rootPath "AGENTS.md") "Codex root AGENTS.md"
+Check-File (Join-Path $rootPath "shared\harness.yaml") "harness declaration"
+Check-File (Join-Path $rootPath "shared\institution-profile.yaml") "institution profile"
+Check-File (Join-Path $rootPath "shared\templates\institution-profile.schema.json") "institution profile schema"
+Check-File (Join-Path $rootPath "shared\templates\harness.schema.json") "harness schema"
+Check-File (Join-Path $rootPath "shared\references\permission-model.yaml") "permission model"
+Check-File (Join-Path $rootPath "shared\references\runtime-selection-policy.yaml") "runtime selection policy"
+Check-File (Join-Path $rootPath "shared\references\lifecycle-quality-gates.yaml") "lifecycle quality gates"
+Check-File (Join-Path $rootPath "shared\references\harness-enforcement-contract.yaml") "harness enforcement contract"
+Check-File (Join-Path $rootPath "shared\references\package-governance.yaml") "package governance"
+Check-File (Join-Path $rootPath "shared\references\package-alternatives.yaml") "package alternatives"
+Check-File (Join-Path $rootPath "shared\references\trusted-registry-integration.yaml") "trusted registry integration"
+Check-File (Join-Path $rootPath "shared\references\checker-bootstrap-policy.md") "checker bootstrap policy"
+Check-File (Join-Path $rootPath "shared\scripts\checker-bootstrap.mjs") "checker bootstrap helper"
+Check-File (Join-Path $rootPath "shared\scripts\package-catalog-export.mjs") "package catalog export helper"
 Check-File (Join-Path $rootPath "shared\references\network-profile.yaml") "canonical network profile"
 Check-File (Join-Path $rootPath "shared\references\thin-l1-policy.md") "thin L1 policy"
 Check-File (Join-Path $rootPath "shared\references\agent-handoff-contract.md") "handoff contract"
+Check-File (Join-Path $rootPath "shared\templates\11_패키지검토요청서.template.md") "package review request template"
+
+# Claude Code files are compatibility artifacts, not the Codex source of truth.
+$claudeDir = Join-Path $rootPath ".claude"
+if (Test-Path -LiteralPath $claudeDir) {
+  Check-File (Join-Path $rootPath ".claude\README.md") "Claude compatibility README"
+  Check-File (Join-Path $rootPath ".claude\CLAUDE.md") "Claude compatibility CLAUDE.md"
+  Check-File (Join-Path $rootPath ".claude\skills\gg-vibecode\skill.md") "Claude compatibility gg-vibecode skill"
+}
+
+# Institution profile is the single agency-specific override file.
+$institutionProfile = Join-Path $rootPath "shared\institution-profile.yaml"
+if (Test-Path -LiteralPath $institutionProfile) {
+  $profile = Get-Content -LiteralPath $institutionProfile -Encoding UTF8 -Raw
+  $requiredProfileMarkers = @(
+    "profile_version:",
+    "institution:",
+    "environment:",
+    "server_profiles:",
+    "development:",
+    "production:",
+    "allowed_languages:",
+    "allowed_dbms:",
+    "plugins:",
+    "libraries:",
+    "harness_enforcement:"
+  )
+  foreach ($marker in $requiredProfileMarkers) {
+    if ($profile -notmatch [regex]::Escape($marker)) { Fail "institution-profile.yaml missing required marker: $marker" }
+  }
+  if ($profile -notmatch "vibecode-checker") { Warn "institution-profile.yaml should declare vibecode-checker MCP policy" }
+  if ($profile -notmatch "production:\s*\r?\n\s+server:") { Fail "institution-profile.yaml must define production.server" }
+  if ($profile -notmatch "development:\s*\r?\n\s+server:") { Fail "institution-profile.yaml must define development.server" }
+  if ($profile -notmatch "allowed_function_implementation_languages:\s*\r?\n\s+- python\s*\r?\n\s+- javascript") { Fail "institution-profile.yaml must limit implementation languages to python and javascript" }
+  if ($profile -notmatch "registry_access:\s*`"checker-mediated-only`"") { Fail "institution-profile.yaml must declare checker-mediated registry access" }
+  if ($profile -notmatch "default_mode:\s*MONITOR") { Fail "institution-profile.yaml must default enforcement mode to MONITOR during registry rollout" }
+  if ($profile -notmatch "checker_bootstrap:") { Fail "institution-profile.yaml must declare checker bootstrap policy" }
+  if ($profile -match "supabase:\s*\r?\n\s+status:\s*allowed") { Fail "Supabase must not be allowed directly in institution profile" }
+  if ($profile -match "firebase:\s*\r?\n\s+status:\s*allowed") { Fail "Firebase must not be allowed directly in institution profile" }
+}
+
+$enforcementContract = Join-Path $rootPath "shared\references\harness-enforcement-contract.yaml"
+if (Test-Path -LiteralPath $enforcementContract) {
+  $contractText = Get-Content -LiteralPath $enforcementContract -Encoding UTF8 -Raw
+  foreach ($marker in @("harness_enforcement_contract_version:", "role_separation:", "implementation_language_policy:", "checker_call_contract:", "verdict_priority:", "absolute_block:", "enforcement_modes:", "environment_grades:", "local_catalog_and_registry_priority:", "block_response_contract:")) {
+    if ($contractText -notmatch [regex]::Escape($marker)) { Fail "harness-enforcement-contract.yaml missing required marker: $marker" }
+  }
+  foreach ($marker in @("freshness_policy:", "typosquat_policy:", "bypass_policy:", "default_mode: MONITOR")) {
+    if ($contractText -notmatch [regex]::Escape($marker)) { Fail "harness-enforcement-contract.yaml missing required enforcement update: $marker" }
+  }
+  foreach ($marker in @("malicious", "registry_rejected", "not_found", "checker-mediated", "python", "javascript")) {
+    if ($contractText -notmatch [regex]::Escape($marker)) { Fail "harness-enforcement-contract.yaml missing required policy text: $marker" }
+  }
+}
+
+$checkerBootstrap = Join-Path $rootPath "shared\references\checker-bootstrap-policy.md"
+if (Test-Path -LiteralPath $checkerBootstrap) {
+  $bootstrapText = Get-Content -LiteralPath $checkerBootstrap -Encoding UTF8 -Raw
+  foreach ($marker in @("https://github.com/Lex6won/vibecode-checker", "사용자", "확인", "checker-bootstrap.mjs", "--yes", "--install-python", "GVSKB_MODE=offline")) {
+    if ($bootstrapText -notmatch [regex]::Escape($marker)) { Fail "checker-bootstrap-policy.md missing required marker: $marker" }
+  }
+}
+
+$runtimePolicy = Join-Path $rootPath "shared\references\runtime-selection-policy.yaml"
+if (Test-Path -LiteralPath $runtimePolicy) {
+  $runtimeText = Get-Content -LiteralPath $runtimePolicy -Encoding UTF8 -Raw
+  foreach ($marker in @("runtime_selection_version:", "server_profiles:", "recommendations:", "decision_rules:", "output_requirements:")) {
+    if ($runtimeText -notmatch [regex]::Escape($marker)) { Fail "runtime-selection-policy.yaml missing required marker: $marker" }
+  }
+}
+
+$packageGovernance = Join-Path $rootPath "shared\references\package-governance.yaml"
+if (Test-Path -LiteralPath $packageGovernance) {
+  $governanceText = Get-Content -LiteralPath $packageGovernance -Encoding UTF8 -Raw
+  foreach ($marker in @("package_governance_version:", "source_of_truth:", "statuses:", "checker_verdict_mapping:", "absolute_block:", "promotion_rules:", "replacement_rules:", "future_platform_integration:", "checker_limitations:")) {
+    if ($governanceText -notmatch [regex]::Escape($marker)) { Fail "package-governance.yaml missing required marker: $marker" }
+  }
+}
+
+$lifecycleGates = Join-Path $rootPath "shared\references\lifecycle-quality-gates.yaml"
+if (Test-Path -LiteralPath $lifecycleGates) {
+  $lifecycleText = Get-Content -LiteralPath $lifecycleGates -Encoding UTF8 -Raw
+  foreach ($marker in @("lifecycle_quality_gates_version:", "stages:", "idea:", "design:", "implementation:", "test:", "release:", "balance_checks:")) {
+    if ($lifecycleText -notmatch [regex]::Escape($marker)) { Fail "lifecycle-quality-gates.yaml missing required marker: $marker" }
+  }
+}
+
+$packageAlternatives = Join-Path $rootPath "shared\references\package-alternatives.yaml"
+if (Test-Path -LiteralPath $packageAlternatives) {
+  $altText = Get-Content -LiteralPath $packageAlternatives -Encoding UTF8 -Raw
+  foreach ($marker in @("package_alternatives_version:", "selection_order:", "mandatory_rule:", "patterns:", "preferred_replacement:", "output_template:")) {
+    if ($altText -notmatch [regex]::Escape($marker)) { Fail "package-alternatives.yaml missing required marker: $marker" }
+  }
+}
+
+$trustedRegistry = Join-Path $rootPath "shared\references\trusted-registry-integration.yaml"
+if (Test-Path -LiteralPath $trustedRegistry) {
+  $registryText = Get-Content -LiteralPath $trustedRegistry -Encoding UTF8 -Raw
+  foreach ($marker in @("trusted_registry_integration_version:", "integration_model:", "current_mode:", "future_mode:", "registry_status_mapping:", "checker_verdicts:", "harness_rules:", "audit_metadata:")) {
+    if ($registryText -notmatch [regex]::Escape($marker)) { Fail "trusted-registry-integration.yaml missing required marker: $marker" }
+  }
+  if ($registryText -notmatch "direct_registry_calls_by_harness:\s*`"not allowed") { Fail "trusted-registry-integration.yaml must forbid direct registry calls by harness" }
+}
+
+# Harness declaration and permission model must point at the agency profile and safe outputs.
+$harness = Join-Path $rootPath "shared\harness.yaml"
+if (Test-Path -LiteralPath $harness) {
+  $harnessText = Get-Content -LiteralPath $harness -Encoding UTF8 -Raw
+  if ($harnessText -notmatch "institution-profile.yaml") { Fail "harness.yaml must point to shared/institution-profile.yaml" }
+  if ($harnessText -notmatch "permission-model.yaml") { Fail "harness.yaml must point to permission-model.yaml" }
+  if ($harnessText -notmatch "runtime-selection-policy.yaml") { Fail "harness.yaml must point to runtime-selection-policy.yaml" }
+  if ($harnessText -notmatch "package-governance.yaml") { Fail "harness.yaml must point to package-governance.yaml" }
+  if ($harnessText -notmatch "harness-enforcement-contract.yaml") { Fail "harness.yaml must point to harness-enforcement-contract.yaml" }
+  if ($harnessText -notmatch "checker-bootstrap-policy.md") { Fail "harness.yaml must point to checker-bootstrap-policy.md" }
+  if ($harnessText -notmatch "lifecycle-quality-gates.yaml") { Fail "harness.yaml must point to lifecycle-quality-gates.yaml" }
+  if ($harnessText -notmatch "package-alternatives.yaml") { Fail "harness.yaml must point to package-alternatives.yaml" }
+  if ($harnessText -notmatch "trusted-registry-integration.yaml") { Fail "harness.yaml must point to trusted-registry-integration.yaml" }
+  if ($harnessText -notmatch "codex:\s*`"AGENTS.md`"") { Fail "harness.yaml must point Codex at root AGENTS.md" }
+  if ($harnessText -notmatch "registry_access:\s*`"checker-mediated-only`"") { Fail "harness.yaml must declare checker-mediated-only registry access" }
+  if ($harnessText -notmatch "default_mode:\s*`"MONITOR`"") { Fail "harness.yaml must default enforcement mode to MONITOR for rollout" }
+  if ($harnessText -notmatch "checker-bootstrap.mjs") { Fail "harness.yaml must point to checker-bootstrap.mjs" }
+  if ($harnessText -notmatch "package-catalog-export.mjs") { Fail "harness.yaml must point to package-catalog-export.mjs" }
+  if ($harnessText -notmatch "implementation_languages:\s*\r?\n\s+- `"python`"\s*\r?\n\s+- `"javascript`"") { Fail "harness.yaml must declare python/javascript implementation languages" }
+  if ($harnessText -notmatch "safe_outputs:") { Fail "harness.yaml must declare safe_outputs" }
+}
+
+$permissionModel = Join-Path $rootPath "shared\references\permission-model.yaml"
+if (Test-Path -LiteralPath $permissionModel) {
+  $permissionText = Get-Content -LiteralPath $permissionModel -Encoding UTF8 -Raw
+  foreach ($marker in @("planning:", "development:", "security_check:", "release:", "safe_output_policy:")) {
+    if ($permissionText -notmatch [regex]::Escape($marker)) { Fail "permission-model.yaml missing required marker: $marker" }
+  }
+  if ($permissionText -notmatch "repository_push") { Fail "permission-model.yaml must address repository push restrictions" }
+}
 
 # deploy-context must be compatibility pointer, not second source of truth.
 $deployContext = Join-Path $rootPath ".claude\references\deploy-context.yaml"
@@ -36,6 +183,25 @@ if (Test-Path -LiteralPath $deployContext) {
 # Manifest schema must parse.
 $schema = Join-Path $rootPath "shared\templates\vibecode-manifest.schema.json"
 try { Get-Content -LiteralPath $schema -Encoding UTF8 -Raw | ConvertFrom-Json | Out-Null; Write-Output "OK manifest schema" } catch { Fail "INVALID manifest schema: $($_.Exception.Message)" }
+foreach ($schemaPath in @("shared\templates\institution-profile.schema.json", "shared\templates\harness.schema.json")) {
+  $fullSchemaPath = Join-Path $rootPath $schemaPath
+  try { Get-Content -LiteralPath $fullSchemaPath -Encoding UTF8 -Raw | ConvertFrom-Json | Out-Null; Write-Output "OK $schemaPath" } catch { Fail "INVALID ${schemaPath}: $($_.Exception.Message)" }
+}
+
+# Eval cases must parse.
+$evalDir = Join-Path $rootPath "evals"
+if (Test-Path -LiteralPath $evalDir) {
+  foreach ($case in Get-ChildItem -LiteralPath $evalDir -Filter "*.json" -File) {
+    try {
+      $eval = Get-Content -LiteralPath $case.FullName -Encoding UTF8 -Raw | ConvertFrom-Json
+      if (-not $eval.name) { Fail "eval case missing name: $($case.Name)" }
+      if (-not $eval.expect -or $eval.expect.Count -eq 0) { Fail "eval case missing expect[]: $($case.Name)" }
+    } catch {
+      Fail "INVALID eval case $($case.Name): $($_.Exception.Message)"
+    }
+  }
+  Write-Output "OK eval cases"
+}
 
 # Golden templates must have real files.
 $gold = Join-Path $rootPath "shared\golden-templates"
