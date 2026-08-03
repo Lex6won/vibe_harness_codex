@@ -49,6 +49,7 @@ gvskb가 엔진, 너는 코치다. 반환값만 신뢰한다. 개발 에이전�
    - 다르면 경고를 통과로 묵살하지 말고 `status=block`, `security_status=incomplete`, `missing_evidence=checker_profile_mismatch`로 기록한다. 이 경우 “요청한 보안 프로파일이 실제 적용되지 않아 검증 미완료”라고 처리하고, 기본값으로 돌아간 검사 결과를 quick/standard/full 완료 증거로 쓰지 않는다.
    - 예: quick에서 `dev-quick`을 요청했는데 체커가 알 수 없는 프로파일로 보고 `public-default-strict` 등으로 대체하면 quick 점검도 완료 처리하지 않는다. 체커 업데이트 또는 절대경로 정책 설정을 먼저 바로잡는다.
    - `server_status()`나 체커 결과가 적용 프로파일과 대체 사실을 제공하면 `requested_checker_profile`, `applied_checker_profile`, `profile_source`를 manifest에 남긴다.
+   - 체커가 `profile_fallback`을 제공하면 `null`일 때만 정상 적용으로 본다. `{requested, applied, ...}` 객체가 있으면 요청 프로파일이 대체된 것이므로 검증 미완료로 처리한다.
 5. 가능하면 `scan_dependencies`도 호출한다. 결과는 `shared/institution-profile.yaml`의 기관별 라이브러리 정책, `approved-packages.yaml`, `package-denylist.yaml`, `package-risk-policy.md`, `package-governance.yaml`, `package-alternatives.yaml` 기준과 함께 해석한다.
    - 가능한 경우 audit metadata로 `caller=harness:auto`, `request_type`, `project_id`, `maturity_level`, `env_grade`, `track`, `requested_package`를 전달한다. 개인 이름, 이메일, 사번, 주민등록번호, 비밀값은 보내지 않는다.
    - `verdict`, `verdict_severity`, `checked`, `requires_review`, `is_malicious_package`, `in_kev`, `kev_checked`, `max_cve`, `cooldown.ok`, `version_exact`, `source_scope`, `registry_status`, `registry_decision`, `registry_stale`, `heuristics.typosquat_warning`를 읽는다.

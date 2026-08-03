@@ -63,6 +63,9 @@ checker_call_contract:
     custom_policy_dir_rule: "GVSKB_POLICIES_DIR must be an absolute path; relative paths such as .claude/references/policies are not valid for MCP runtime."
     network_profile_namespace: "network_profile values such as admin-network/dmz-public/internet-prototype are deployment/network classifications, not checker scan profiles."
     required_verification: "After scan_path, compare requested_checker_profile with the returned report.profile/applied profile; mismatch means security validation is incomplete."
+    profile_fallback_rule: "If checker returns non-null profile_fallback, treat the scan as fallback evidence only and mark security validation incomplete."
+    mcp_command_rule: "Use gvskb-server or python -m gvskb.server; gvskb mcp is invalid."
+    mcp_json_encoding_rule: ".claude/.mcp.json must be UTF-8 without BOM and include PYTHONUTF8=1, PYTHONIOENCODING=utf-8, GVSKB_MODE=offline."
   normal_path:
     - "For package decisions, call vibecode-checker/gvskb; do not call registry directly."
     - "Use scan_dependencies for manifest/lockfile decisions and package-oriented gates."

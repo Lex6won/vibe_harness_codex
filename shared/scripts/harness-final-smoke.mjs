@@ -47,6 +47,8 @@ requireText("README.md", [
   "quick/standard/full",
   "dev-quick",
   "GVSKB_POLICIES_DIR",
+  "gvskb-server",
+  "profile_fallback",
   "network_profile",
   "최종 리포트 2종",
   "보안팀 또는 AX 전담팀에 제출",
@@ -59,6 +61,7 @@ requireText("AGENTS.md", [
   "vibecode-checker",
   "dev-quick",
   "GVSKB_POLICIES_DIR",
+  "profile_fallback",
   "https://github.com/Lex6won/vibe_harness_codex",
   "https://github.com/Lex6won/vibecode-checker",
   "Python or JavaScript",
@@ -106,6 +109,7 @@ requireText("shared/references/checker-bootstrap-policy.md", [
   "https://github.com/Lex6won/vibe_harness_codex",
   "dev-quick",
   "GVSKB_POLICIES_DIR",
+  "gvskb-server",
   "절대경로",
   "--yes",
   "--install-python",
@@ -116,6 +120,7 @@ requireText("shared/references/checker-integration.md", [
   "GVSKB_POLICIES_DIR",
   "requested_checker_profile",
   "applied_checker_profile",
+  "profile_fallback",
   "network_profile",
   "검증을 완료 처리하지 않는다",
 ]);
@@ -186,9 +191,29 @@ for (const file of walk("evals")) {
 }
 
 const mcpConfigText = readText(".claude/.mcp.json");
+const mcpConfigBytes = readFileSync(join(root, ".claude/.mcp.json"));
+if (mcpConfigBytes.length >= 3 && mcpConfigBytes[0] === 0xef && mcpConfigBytes[1] === 0xbb && mcpConfigBytes[2] === 0xbf) {
+  failures.push(".claude/.mcp.json must be UTF-8 without BOM");
+}
+const parsedMcpConfig = JSON.parse(mcpConfigText);
+const checkerServer = parsedMcpConfig?.mcpServers?.["vibecode-checker"];
+const checkerCommand = checkerServer?.command;
+const checkerArgs = Array.isArray(checkerServer?.args) ? checkerServer.args : [];
+const usesGvskbServer = checkerCommand === "gvskb-server" && checkerArgs.length === 0;
+const usesPythonModule = checkerCommand === "python" && checkerArgs.length === 2 && checkerArgs[0] === "-m" && checkerArgs[1] === "gvskb.server";
+if (!usesGvskbServer && !usesPythonModule) {
+  failures.push(".claude/.mcp.json checker command must be gvskb-server or python -m gvskb.server");
+}
+if (checkerCommand === "gvskb" && checkerArgs.includes("mcp")) {
+  failures.push(".claude/.mcp.json must not use invalid command gvskb mcp");
+}
+for (const envName of ["PYTHONUTF8", "PYTHONIOENCODING", "GVSKB_MODE"]) {
+  if (!Object.prototype.hasOwnProperty.call(checkerServer?.env || {}, envName)) {
+    failures.push(`.claude/.mcp.json missing required checker env: ${envName}`);
+  }
+}
 if (mcpConfigText.includes("GVSKB_POLICIES_DIR")) {
-  const parsed = JSON.parse(mcpConfigText);
-  const policyDir = parsed?.mcpServers?.["vibecode-checker"]?.env?.GVSKB_POLICIES_DIR;
+  const policyDir = parsedMcpConfig?.mcpServers?.["vibecode-checker"]?.env?.GVSKB_POLICIES_DIR;
   if (typeof policyDir === "string" && !/^([A-Za-z]:[\\/]|\/)/.test(policyDir)) {
     failures.push(".claude/.mcp.json GVSKB_POLICIES_DIR must be absolute or omitted");
   }

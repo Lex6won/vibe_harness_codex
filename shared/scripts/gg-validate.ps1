@@ -190,8 +190,28 @@ if (Test-Path -LiteralPath $harness) {
 $mcpConfig = Join-Path $rootPath ".claude\.mcp.json"
 if (Test-Path -LiteralPath $mcpConfig) {
   try {
+    $mcpBytes = [System.IO.File]::ReadAllBytes($mcpConfig)
+    if ($mcpBytes.Length -ge 3 -and $mcpBytes[0] -eq 0xEF -and $mcpBytes[1] -eq 0xBB -and $mcpBytes[2] -eq 0xBF) {
+      Fail ".claude/.mcp.json must be UTF-8 without BOM"
+    }
     $mcpJson = Get-Content -LiteralPath $mcpConfig -Encoding UTF8 -Raw | ConvertFrom-Json
     $checkerServer = $mcpJson.mcpServers.'vibecode-checker'
+    if (-not $checkerServer) { Fail ".claude/.mcp.json must define mcpServers.vibecode-checker" }
+    $checkerCommand = [string]$checkerServer.command
+    $checkerArgs = @($checkerServer.args)
+    $usesGvskbServer = $checkerCommand -eq "gvskb-server" -and $checkerArgs.Count -eq 0
+    $usesPythonModule = $checkerCommand -eq "python" -and $checkerArgs.Count -eq 2 -and $checkerArgs[0] -eq "-m" -and $checkerArgs[1] -eq "gvskb.server"
+    if (-not ($usesGvskbServer -or $usesPythonModule)) {
+      Fail ".claude/.mcp.json checker command must be gvskb-server or python -m gvskb.server"
+    }
+    if ($checkerCommand -eq "gvskb" -and $checkerArgs -contains "mcp") {
+      Fail ".claude/.mcp.json must not use invalid command gvskb mcp"
+    }
+    foreach ($envMarker in @("PYTHONUTF8", "PYTHONIOENCODING", "GVSKB_MODE")) {
+      if (-not ($checkerServer.env -and ($checkerServer.env.PSObject.Properties.Name -contains $envMarker))) {
+        Fail ".claude/.mcp.json missing required checker env: $envMarker"
+      }
+    }
     if ($checkerServer -and $checkerServer.env -and ($checkerServer.env.PSObject.Properties.Name -contains "GVSKB_POLICIES_DIR")) {
       $policyDir = [string]$checkerServer.env.GVSKB_POLICIES_DIR
       if (-not [System.IO.Path]::IsPathRooted($policyDir)) {
@@ -210,7 +230,7 @@ if (Test-Path -LiteralPath $readme) {
     if ($readmeText -notmatch [regex]::Escape($marker)) { Fail "README.md missing GitHub distribution marker: $marker" }
   }
   if ($readmeText -notmatch "harness-final-smoke.mjs") { Fail "README.md must document final harness smoke test" }
-  foreach ($marker in @("dev-quick", "GVSKB_POLICIES_DIR", "network_profile", "검증 미완료")) {
+  foreach ($marker in @("dev-quick", "GVSKB_POLICIES_DIR", "network_profile", "검증 미완료", "profile_fallback", "gvskb-server")) {
     if ($readmeText -notmatch [regex]::Escape($marker)) { Fail "README.md missing checker profile integration marker: $marker" }
   }
 }

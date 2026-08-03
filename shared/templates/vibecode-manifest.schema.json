@@ -79,6 +79,12 @@
         "checker_profile_applied": {"type": "boolean"},
         "checker_profile_source": {"enum": ["built-in", "absolute-custom-policy-dir", "unknown"]},
         "checker_profile_mismatch_reason": {"type": "string"},
+        "profile_fallback": {
+          "anyOf": [
+            {"type": "null"},
+            {"type": "object"}
+          ]
+        },
         "scanned_file_count": {"type": "integer", "minimum": 0},
         "full_scan_required": {"type": "boolean"},
         "full_scan_completed": {"type": "boolean"},

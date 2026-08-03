@@ -13,6 +13,8 @@
 7. 하네스 자체의 배포·업데이트 기준도 GitHub `https://github.com/Lex6won/vibe_harness_codex`다. 로컬 폴더는 작업 복사본이며, 기관별 차이는 우선 `shared/institution-profile.yaml`로 관리한다.
 8. 기본 하네스는 체커 내장 표준 프로파일(`dev-quick` 등)을 사용한다. 기관 고유 정책이 생기기 전에는 하네스가 별도 정책 사본을 MCP에 주입하지 않는다.
 9. 기관 고유 정책 때문에 `GVSKB_POLICIES_DIR`을 사용해야 하면 상대경로를 쓰지 말고 반드시 절대경로를 사용한다. MCP 서버의 작업 디렉터리는 사용자가 연 프로젝트 폴더일 수 있다.
+10. MCP 설정은 `gvskb mcp`가 아니라 `gvskb-server` 실행파일 또는 `python -m gvskb.server` 형식을 사용한다. Windows에서 `python`이 Microsoft Store 별칭이면 `gvskb-server`가 더 안전한 기본값이다.
+11. `.claude/.mcp.json`은 BOM 없는 UTF-8 JSON이어야 하며, `PYTHONUTF8=1`, `PYTHONIOENCODING=utf-8`, `GVSKB_MODE=offline`을 명시한다.
 
 ## 2. 사용자 안내 문구
 

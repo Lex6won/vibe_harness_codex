@@ -169,6 +169,8 @@ quick/standard/full은 하네스 단계 이름이고, 실제 체커 호출에는
 
 예를 들어 `dev-quick`을 요청했는데 현재 설치된 체커가 이를 알 수 없는 프로파일로 보고 `public-default-strict`로 대체했다면, quick 점검은 완료된 것이 아닙니다. GitHub 기준 최신 체커로 갱신하거나 기관 정책 경로를 절대경로로 바로잡은 뒤 다시 확인해야 합니다.
 
+체커 MCP 설정은 `gvskb mcp`가 아니라 `gvskb-server` 또는 `python -m gvskb.server`로 실행해야 합니다. Windows에서 `python`이 Microsoft Store 별칭인 경우가 있으므로 기본 배포 설정은 `gvskb-server`를 사용합니다. `.claude/.mcp.json`은 BOM 없는 UTF-8로 저장하고 `PYTHONUTF8=1`, `PYTHONIOENCODING=utf-8`, `GVSKB_MODE=offline`을 포함해야 합니다. 체커가 `profile_fallback`을 반환하면 `null`일 때만 정상 적용이며, 객체가 있으면 검증 미완료입니다.
+
 L1 시제품은 빠른 결과물을 위해 축약 흐름을 사용합니다.
 
 ```text
