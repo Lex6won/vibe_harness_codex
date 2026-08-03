@@ -46,6 +46,12 @@ enforcement:
   rollout_after: "security/operations confirmation; recommended MONITOR 2 weeks then WARN"
   verdict_source: "vibecode-checker/gvskb"
   registry_access: "checker-mediated-only"
+  checker_profile_policy:
+    default_source: "vibecode-checker built-in profiles"
+    quick_profile: "dev-quick"
+    custom_policies_dir: "absolute-path-only"
+    network_profile_is_not_checker_profile: true
+    verify_applied_profile: true
   implementation_languages:
     - "python"
     - "javascript"
@@ -90,6 +96,7 @@ safe_outputs:
 validation:
   local: "shared/scripts/gg-validate.ps1"
   eval: "shared/scripts/gg-eval.ps1"
+  final_smoke: "shared/scripts/harness-final-smoke.mjs"
   checker_bootstrap: "shared/scripts/checker-bootstrap.mjs"
   package_catalog_export: "shared/scripts/package-catalog-export.mjs"
   manifest_schema: "shared/templates/vibecode-manifest.schema.json"

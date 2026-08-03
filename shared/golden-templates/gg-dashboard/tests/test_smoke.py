@@ -2,6 +2,7 @@
 
 
 def test_import():
+    import ast
     import importlib.util
     from pathlib import Path
 
@@ -10,4 +11,4 @@ def test_import():
     assert spec is not None
     # 구문·의존성 로드 확인(Streamlit 런타임 없이 파싱만)
     with open(path, encoding="utf-8") as f:
-        compile(f.read(), str(path), "exec")
+        ast.parse(f.read(), filename=str(path))

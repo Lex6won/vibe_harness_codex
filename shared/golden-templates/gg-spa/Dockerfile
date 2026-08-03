@@ -1,5 +1,6 @@
-﻿FROM node:20-slim AS build
+FROM node:20-slim AS build
 WORKDIR /app
+RUN node -e "const [major, minor] = process.versions.node.split('.').map(Number); if (major !== 20 || minor < 19) { console.error('Node 20.19+ required'); process.exit(1); }"
 COPY package.json package-lock.json* ./
 RUN npm install --ignore-scripts
 COPY . .

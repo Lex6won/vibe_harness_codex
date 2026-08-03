@@ -48,6 +48,8 @@ The `.claude/` directory is a Claude Code compatibility copy. Do not treat it as
 - Treat the official GitHub repositories as the distribution and update sources: harness `https://github.com/Lex6won/vibe_harness_codex`, checker `https://github.com/Lex6won/vibecode-checker`. Local folders are working copies. For other agencies, change `shared/institution-profile.yaml` before forking common harness rules.
 - Use `shared/golden-templates/` as the starting point for implementation. Do not create an arbitrary stack outside an approved track.
 - Apply checker effort proportionally: quick during coding for risky changes only, standard after implementation completion, and full before deployment/security/AX submission.
+- Use checker built-in profiles by default: quick maps to `dev-quick`. Do not rely on relative `GVSKB_POLICIES_DIR`; custom policy directories must be absolute. After `scan_path`, verify that the returned/applied checker profile matches the requested checker profile, or mark validation incomplete.
+- Keep `network_profile` separate from checker profiles. `admin-network`, `dmz-public`, and `internet-prototype` are network/deployment classifications, not values for `scan_path(profile=...)`.
 - For release readiness, the default final submission is exactly the two files saved by `vibecode-checker`: the human HTML report and the JSON evidence report. Tell the user these two final reports must be submitted to the security team or AX team. Extra deployment forms are conditional.
 - Keep generated work inside `_workspace/`, `_workspace/source/`, or `dist/` unless the user explicitly asks otherwise.
 - Do not push to GitHub, deploy to production, send external messages, or write to external systems unless the user explicitly asks for that action.

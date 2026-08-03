@@ -1,0 +1,17 @@
+{
+  "name": "final release harness acceptance",
+  "expect": [
+    "coding quick check",
+    "implementation complete standard check",
+    "release full checker reports",
+    "submit two final reports",
+    "GitHub canonical source",
+    "Python or JavaScript implementation only",
+    "package replacement before exception",
+    "checker bootstrap requires user confirmation",
+    "quick uses dev-quick checker profile",
+    "checker profile application must be verified",
+    "network_profile is not checker profile",
+    "GVSKB_POLICIES_DIR must be absolute or omitted"
+  ]
+}

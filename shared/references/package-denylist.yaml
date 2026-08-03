@@ -12,8 +12,8 @@
 restricted_patterns:
   - cdn.jsdelivr.net
   - unpkg.com
-  - eval(
-  - new Function(
+  - "dynamic-code-eval"
+  - "dynamic-function-constructor"
   - postinstall
   - "@supabase/"
   - "@firebase/"

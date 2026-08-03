@@ -31,7 +31,7 @@ harness_enforcement:
       - javascript
     allowed_runtimes:
       python: ["3.12"]
-      node: ["20"]
+      node: ["20.19+"]
     typescript_default: "not-allowed-as-implementation-source"
     non_python_javascript_request: "needs-review-and-approved-track-rewrite"
   env_grade_defaults:
@@ -55,6 +55,11 @@ harness_enforcement:
     offline_clone_allowed: false
     default_local_path: "tools/vibecode-checker"
     helper_script: "shared/scripts/checker-bootstrap.mjs"
+  checker_profile_policy:
+    default_source: "vibecode-checker built-in profiles"
+    quick_profile: "dev-quick"
+    custom_policies_dir: "absolute-path-only"
+    verify_applied_profile: true
 
 server_profiles:
   small:
@@ -89,7 +94,7 @@ environment:
       package_install: "official-index-or-internal-mirror"
     allowed_languages:
       python: ["3.12"]
-      node: ["20"]
+      node: ["20.19+"]
     allowed_dbms:
       sqlite:
         versions: ["3"]
@@ -115,7 +120,7 @@ environment:
       logging: "stdout-or-journald"
     allowed_languages:
       python: ["3.12"]
-      node: ["20"]
+      node: ["20.19+"]
     allowed_dbms:
       postgresql:
         versions: ["16"]

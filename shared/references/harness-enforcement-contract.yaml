@@ -57,6 +57,12 @@ implementation_language_policy:
 
 checker_call_contract:
   registry_access: "checker-mediated-only"
+  profile_policy:
+    default_source: "vibecode-checker built-in profiles"
+    harness_policy_copies: "not used unless an institution explicitly creates custom policies"
+    custom_policy_dir_rule: "GVSKB_POLICIES_DIR must be an absolute path; relative paths such as .claude/references/policies are not valid for MCP runtime."
+    network_profile_namespace: "network_profile values such as admin-network/dmz-public/internet-prototype are deployment/network classifications, not checker scan profiles."
+    required_verification: "After scan_path, compare requested_checker_profile with the returned report.profile/applied profile; mismatch means security validation is incomplete."
   normal_path:
     - "For package decisions, call vibecode-checker/gvskb; do not call registry directly."
     - "Use scan_dependencies for manifest/lockfile decisions and package-oriented gates."
@@ -194,6 +200,7 @@ enforcement_modes:
 checker_effort_profiles:
   quick:
     purpose: "During coding, catch essential safety rails without slowing the user or spending unnecessary tokens."
+    checker_profile: "dev-quick"
     trigger: "Risky code/dependency changes or explicit user request such as pre-commit/midpoint check."
     scope: "Changed files, requested snippet/path, and changed dependency manifests only."
     must_check:

@@ -30,18 +30,25 @@ gvskb가 엔진, 너는 코치다. 반환값만 신뢰한다. 개발 에이전�
    - MCP/CLI가 없으면 `shared/references/checker-bootstrap-policy.md`를 읽고 사용자에게 설치 여부를 확인한다.
    - 사용자 확인 전에는 GitHub clone, Python 패키지 설치, MCP 설정 변경을 하지 않는다.
    - 기본 설치 출처는 `https://github.com/Lex6won/vibecode-checker`다.
+   - `GVSKB_POLICIES_DIR` 같은 정책 경로 환경변수를 쓸 때는 상대경로를 쓰지 않는다. MCP 서버의 작업 디렉터리는 사용자가 연 프로젝트 폴더일 수 있으므로, 기관 고유 정책이 필요하면 설치/부트스트랩 단계에서 절대경로로 세팅해야 한다.
+   - 기본 하네스는 체커 내장 표준 프로파일을 사용한다. 기관 고유 정책이 생기기 전에는 하네스가 `references/policies/` 사본을 유지하거나 상대경로로 주입하지 않는다.
 2. 요청 모드와 위험도에 따라 quick/standard/full을 정한다.
    - quick은 새 패키지, 인증/권한, 개인정보/민감정보, 파일 업로드, 외부 API/CDN/LLM/MCP, SQL/DB, 명령 실행/eval, 기관 정책 밖 언어·DB·런타임 변경이 있을 때만 자동 또는 요청 기반으로 수행한다.
    - 단순 UI 문구, 문서, 스타일 변경에는 full 검사를 돌리지 않는다.
    - standard는 개발 완료 후 전체 source와 의존성 확인에 사용한다.
    - full은 배포 전 최종 검사와 제출 리포트 생성에만 사용한다.
-3. profile을 매핑한다.
+3. checker profile을 매핑한다. `network_profile`(`admin-network`, `dmz-public`, `internet-prototype`)은 망 구분값이지 `scan_path(profile=...)`에 넣는 체커 프로파일이 아니다.
+   - quick: `dev-quick`
    - 행정망 내부 조회/관리도구: `internal-db-query`
    - 내부 웹 서비스: `web-civil-service`
    - 대민 웹 서비스: `web-civil-service`
    - 대민 챗봇: `civil-complaint-chatbot`
    - 기본 엄격: `public-default-strict`
 4. 실제 소스 경로에 `scan_path`를 호출한다. `_workspace` 문서가 아니라 `source`를 검사한다. quick이면 변경 파일 또는 위험 변경 범위를 우선하고, standard/full이면 전체 source를 본다.
+   - 호출 직후 `scan_path` 결과의 `profile`이 요청한 checker profile과 같은지 확인한다.
+   - 다르면 경고를 통과로 묵살하지 말고 `status=block`, `security_status=incomplete`, `missing_evidence=checker_profile_mismatch`로 기록한다. 이 경우 “요청한 보안 프로파일이 실제 적용되지 않아 검증 미완료”라고 처리하고, 기본값으로 돌아간 검사 결과를 quick/standard/full 완료 증거로 쓰지 않는다.
+   - 예: quick에서 `dev-quick`을 요청했는데 체커가 알 수 없는 프로파일로 보고 `public-default-strict` 등으로 대체하면 quick 점검도 완료 처리하지 않는다. 체커 업데이트 또는 절대경로 정책 설정을 먼저 바로잡는다.
+   - `server_status()`나 체커 결과가 적용 프로파일과 대체 사실을 제공하면 `requested_checker_profile`, `applied_checker_profile`, `profile_source`를 manifest에 남긴다.
 5. 가능하면 `scan_dependencies`도 호출한다. 결과는 `shared/institution-profile.yaml`의 기관별 라이브러리 정책, `approved-packages.yaml`, `package-denylist.yaml`, `package-risk-policy.md`, `package-governance.yaml`, `package-alternatives.yaml` 기준과 함께 해석한다.
    - 가능한 경우 audit metadata로 `caller=harness:auto`, `request_type`, `project_id`, `maturity_level`, `env_grade`, `track`, `requested_package`를 전달한다. 개인 이름, 이메일, 사번, 주민등록번호, 비밀값은 보내지 않는다.
    - `verdict`, `verdict_severity`, `checked`, `requires_review`, `is_malicious_package`, `in_kev`, `kev_checked`, `max_cve`, `cooldown.ok`, `version_exact`, `source_scope`, `registry_status`, `registry_decision`, `registry_stale`, `heuristics.typosquat_warning`를 읽는다.

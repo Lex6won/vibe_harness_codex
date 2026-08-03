@@ -55,6 +55,7 @@
 | Registry 연계 정책 | `shared/references/trusted-registry-integration.yaml` |
 | 주요 네트워크 프로파일 | 행정망 / DMZ·외부망 / 인터넷 시제품 |
 | 검증 스크립트 | `shared/scripts/gg-validate.ps1` |
+| 최종 스모크 테스트 | `shared/scripts/harness-final-smoke.mjs` |
 | 체커 설치 보조 | `shared/scripts/checker-bootstrap.mjs` |
 | 레지스트리 카탈로그 export | `shared/scripts/package-catalog-export.mjs` |
 
@@ -162,6 +163,12 @@ Claude Code 호환 진입점은 다음입니다.
 → 배포 전 체커 최종 리포트 2종 생성·제출 안내
 ```
 
+quick/standard/full은 하네스 단계 이름이고, 실제 체커 호출에는 별도 checker profile을 매핑합니다. 개발 중 quick 점검은 체커 표준 프로파일 `dev-quick`을 사용합니다. `admin-network`, `dmz-public`, `internet-prototype`은 망 구분용 `network_profile`이지 체커 `scan_path(profile=...)` 값이 아닙니다.
+
+하네스는 기본적으로 체커 내장 프로파일을 사용합니다. 기관 고유 정책을 따로 만들기 전에는 `GVSKB_POLICIES_DIR`을 쓰지 않습니다. 꼭 써야 한다면 `.claude/...` 같은 상대경로가 아니라 설치/부트스트랩 단계에서 계산한 절대경로를 사용해야 합니다. 검사 후에는 체커 결과의 `profile`이 요청한 checker profile과 같은지 확인하고, 다르면 검증 미완료로 처리합니다.
+
+예를 들어 `dev-quick`을 요청했는데 현재 설치된 체커가 이를 알 수 없는 프로파일로 보고 `public-default-strict`로 대체했다면, quick 점검은 완료된 것이 아닙니다. GitHub 기준 최신 체커로 갱신하거나 기관 정책 경로를 절대경로로 바로잡은 뒤 다시 확인해야 합니다.
+
 L1 시제품은 빠른 결과물을 위해 축약 흐름을 사용합니다.
 
 ```text
@@ -240,6 +247,12 @@ Codex 또는 Claude Code 등에서 다음처럼 요청합니다.
 
 ```powershell
 powershell.exe -ExecutionPolicy Bypass -File .\shared\scripts\gg-validate.ps1 -Root . -Level L1
+```
+
+최종 방향이 유지되는지 스모크 테스트합니다.
+
+```powershell
+node .\shared\scripts\harness-final-smoke.mjs .
 ```
 
 배포·이관 패키지를 만들 때는 다음을 사용합니다.
@@ -595,6 +608,12 @@ powershell.exe -ExecutionPolicy Bypass -File .\shared\scripts\gg-validate.ps1 -R
 
 ```powershell
 powershell.exe -ExecutionPolicy Bypass -File .\shared\scripts\gg-eval.ps1 -Root .
+```
+
+최종 하네스 수용테스트:
+
+```powershell
+node .\shared\scripts\harness-final-smoke.mjs .
 ```
 
 패키징:

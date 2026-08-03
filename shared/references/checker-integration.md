@@ -12,6 +12,8 @@
 6. 패키지 결정은 레지스트리에 직접 묻지 않는다. 하네스는 `scan_dependencies` 또는 동등한 gvskb 기능을 호출하고, gvskb가 레지스트리 판정까지 포함한 단일 verdict를 반환한다고 본다.
 7. 소스 보안점검은 `_workspace` 문서가 아니라 실제 소스 경로인 `_workspace/source/` 또는 사용자가 지정한 코드 경로를 대상으로 한다.
 8. `render_report`가 저장한 보고서는 에이전트가 다른 위치나 다른 이름으로 다시 저장하지 않는다. 체커가 반환한 `saved.markdown`, `saved.html`, `saved.json` 경로를 그대로 사용자와 manifest에 기록한다.
+9. 하네스는 기본적으로 체커 내장 표준 프로파일을 사용한다. 기관 고유 정책이 생기기 전에는 하네스가 별도 `references/policies/` 사본을 유지하거나 `GVSKB_POLICIES_DIR` 상대경로에 의존하지 않는다.
+10. 기관 고유 정책 때문에 `GVSKB_POLICIES_DIR`을 써야 한다면 반드시 설치/부트스트랩 단계에서 절대경로로 지정한다. MCP 서버의 작업 디렉터리는 하네스 저장소 루트가 아니라 사용자가 연 프로젝트 폴더일 수 있다.
 
 ## 1-1. 단계별 체커 사용 강도
 
@@ -19,7 +21,7 @@
 
 | 단계 | 프로파일 | 체커 사용 | 사용자 경험 |
 |---|---|---|---|
-| 코딩 중 | quick | 변경 파일, 새 패키지, 핵심 위험만 확인 | 통과는 조용히, 차단은 한 줄 조치 |
+| 코딩 중 | quick(`dev-quick`) | 변경 파일, 새 패키지, 핵심 위험만 확인 | 통과는 조용히, 차단은 한 줄 조치 |
 | 개발 완료 후 | standard | 전체 source와 선언된 의존성 점검 | 보안점검 요약과 수정 경로 |
 | 배포 전 | full | 전체 소스, 의존성, 설치본, 벤더 번들, 최종 리포트 저장 | 최종 제출 리포트 2종 경로 안내 |
 
@@ -42,6 +44,24 @@ quick에서 반드시 보는 안전장치는 아래로 제한한다.
 - 기관 프로파일 밖 구현언어, DBMS, 런타임, 운영서버 사양 위반
 
 단순 UI 문구, 문서, 스타일 수정에는 자동 full scan을 하지 않는다.
+
+### 1-2. 체커 프로파일 적용 검증
+
+`network_profile`과 `checker profile`은 이름공간이 다르다.
+
+- `network_profile`: `admin-network`, `dmz-public`, `internet-prototype` 같은 망/배포 구분값
+- `checker profile`: `dev-quick`, `internal-db-query`, `web-civil-service`, `civil-complaint-chatbot`, `public-default-strict` 같은 체커 룰 프로파일
+
+하네스는 `network_profile` 값을 `scan_path(profile=...)`에 그대로 넣지 않는다. 보안검사 호출 전에는 작업 단계와 서비스 유형으로 checker profile을 따로 결정한다.
+
+검사 호출 후에는 반드시 적용 여부를 확인한다.
+
+1. 요청한 checker profile을 manifest에 `requested_checker_profile`로 기록한다.
+2. `scan_path` 결과의 `profile` 값을 `applied_checker_profile`로 기록한다.
+3. 두 값이 다르면 검증을 완료 처리하지 않는다. 체커가 기본값으로 대체 실행한 결과는 보조 정보일 뿐, quick/standard/full 게이트 통과 증거가 아니다.
+4. 이 경우 사용자에게는 내부 필드명을 길게 보여주지 않고 “요청한 보안 프로파일이 실제 적용되지 않아 검증을 완료하지 못했습니다. 체커 설정 또는 정책 경로를 확인해야 합니다.”라고 안내한다.
+
+특히 quick에서 `dev-quick`을 요청했는데 체커가 알 수 없는 프로파일로 처리하거나 `public-default-strict` 등으로 폴백하면 “더 엄격하게 검사했으니 통과”로 보지 않는다. 하네스가 의도한 단계별 경량 검사 증거가 아니므로 체커 업데이트 또는 절대경로 정책 설정을 먼저 요구한다.
 
 ### standard — 개발 완료 후 점검
 

@@ -1,6 +1,6 @@
 # gg-node-api — 프로젝트 AI 규칙 (골든 템플릿, Track N)
 
-- 런타임 Node 20 고정. 승인 npm_backend 카탈로그만(express·helmet·express-rate-limit·pg·pino·zod·openid-client·jose).
+- 런타임 Node 20.19 이상, 21 미만 고정. 승인 npm_backend 카탈로그만(express·helmet·express-rate-limit·pg·pino·zod·openid-client·jose).
 - lockfile 필수, `npm ci --ignore-scripts` 전제(공급망 공격 방어).
 - 보안 헤더(helmet)·호출률 제한(express-rate-limit)·`/health` 제거 금지.
 - DB는 pg 파라미터 바인딩($1)만. 문자열 조립 쿼리 금지.

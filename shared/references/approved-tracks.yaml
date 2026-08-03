@@ -22,7 +22,7 @@ tracks:
     allowed: [internal, public-with-review]
   node-api:
     platform_track: N
-    stack: React optional + Node 20 Express API
+    stack: React optional + Node 20.19+ Express API
     templates: [gg-node-api]
     allowed: [internal]
     public: requires_committee_review

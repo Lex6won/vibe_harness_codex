@@ -35,6 +35,7 @@ Check-File (Join-Path $rootPath "shared\references\trusted-registry-integration.
 Check-File (Join-Path $rootPath "shared\references\checker-bootstrap-policy.md") "checker bootstrap policy"
 Check-File (Join-Path $rootPath "shared\scripts\checker-bootstrap.mjs") "checker bootstrap helper"
 Check-File (Join-Path $rootPath "shared\scripts\package-catalog-export.mjs") "package catalog export helper"
+Check-File (Join-Path $rootPath "shared\scripts\harness-final-smoke.mjs") "final harness smoke test"
 Check-File (Join-Path $rootPath "shared\references\network-profile.yaml") "canonical network profile"
 Check-File (Join-Path $rootPath "shared\references\thin-l1-policy.md") "thin L1 policy"
 Check-File (Join-Path $rootPath "shared\references\agent-handoff-contract.md") "handoff contract"
@@ -105,6 +106,9 @@ if (Test-Path -LiteralPath $checkerBootstrap) {
     if ($bootstrapText -notmatch [regex]::Escape($marker)) { Fail "checker-bootstrap-policy.md missing required marker: $marker" }
   }
   if ($bootstrapText -notmatch [regex]::Escape("https://github.com/Lex6won/vibe_harness_codex")) { Fail "checker-bootstrap-policy.md must declare the canonical harness GitHub repository" }
+  foreach ($marker in @("dev-quick", "GVSKB_POLICIES_DIR", "절대경로", "상대경로")) {
+    if ($bootstrapText -notmatch [regex]::Escape($marker)) { Fail "checker-bootstrap-policy.md missing checker profile path marker: $marker" }
+  }
 }
 
 $runtimePolicy = Join-Path $rootPath "shared\references\runtime-selection-policy.yaml"
@@ -172,11 +176,31 @@ if (Test-Path -LiteralPath $harness) {
   if ($harnessText -notmatch "trusted-registry-integration.yaml") { Fail "harness.yaml must point to trusted-registry-integration.yaml" }
   if ($harnessText -notmatch "codex:\s*`"AGENTS.md`"") { Fail "harness.yaml must point Codex at root AGENTS.md" }
   if ($harnessText -notmatch "registry_access:\s*`"checker-mediated-only`"") { Fail "harness.yaml must declare checker-mediated-only registry access" }
+  foreach ($marker in @("checker_profile_policy:", "quick_profile: `"dev-quick`"", "custom_policies_dir: `"absolute-path-only`"", "network_profile_is_not_checker_profile: true", "verify_applied_profile: true")) {
+    if ($harnessText -notmatch [regex]::Escape($marker)) { Fail "harness.yaml missing checker profile policy marker: $marker" }
+  }
   if ($harnessText -notmatch "default_mode:\s*`"MONITOR`"") { Fail "harness.yaml must default enforcement mode to MONITOR for rollout" }
   if ($harnessText -notmatch "checker-bootstrap.mjs") { Fail "harness.yaml must point to checker-bootstrap.mjs" }
   if ($harnessText -notmatch "package-catalog-export.mjs") { Fail "harness.yaml must point to package-catalog-export.mjs" }
+  if ($harnessText -notmatch "harness-final-smoke.mjs") { Fail "harness.yaml must point to harness-final-smoke.mjs" }
   if ($harnessText -notmatch "implementation_languages:\s*\r?\n\s+- `"python`"\s*\r?\n\s+- `"javascript`"") { Fail "harness.yaml must declare python/javascript implementation languages" }
   if ($harnessText -notmatch "safe_outputs:") { Fail "harness.yaml must declare safe_outputs" }
+}
+
+$mcpConfig = Join-Path $rootPath ".claude\.mcp.json"
+if (Test-Path -LiteralPath $mcpConfig) {
+  try {
+    $mcpJson = Get-Content -LiteralPath $mcpConfig -Encoding UTF8 -Raw | ConvertFrom-Json
+    $checkerServer = $mcpJson.mcpServers.'vibecode-checker'
+    if ($checkerServer -and $checkerServer.env -and ($checkerServer.env.PSObject.Properties.Name -contains "GVSKB_POLICIES_DIR")) {
+      $policyDir = [string]$checkerServer.env.GVSKB_POLICIES_DIR
+      if (-not [System.IO.Path]::IsPathRooted($policyDir)) {
+        Fail ".claude/.mcp.json GVSKB_POLICIES_DIR must be an absolute path or omitted"
+      }
+    }
+  } catch {
+    Fail "INVALID .claude/.mcp.json: $($_.Exception.Message)"
+  }
 }
 
 $readme = Join-Path $rootPath "README.md"
@@ -184,6 +208,18 @@ if (Test-Path -LiteralPath $readme) {
   $readmeText = Get-Content -LiteralPath $readme -Encoding UTF8 -Raw
   foreach ($marker in @("https://github.com/Lex6won/vibe_harness_codex", "https://github.com/Lex6won/vibecode-checker", "git clone https://github.com/Lex6won/vibe_harness_codex.git", "git clone https://github.com/Lex6won/vibecode-checker.git")) {
     if ($readmeText -notmatch [regex]::Escape($marker)) { Fail "README.md missing GitHub distribution marker: $marker" }
+  }
+  if ($readmeText -notmatch "harness-final-smoke.mjs") { Fail "README.md must document final harness smoke test" }
+  foreach ($marker in @("dev-quick", "GVSKB_POLICIES_DIR", "network_profile", "검증 미완료")) {
+    if ($readmeText -notmatch [regex]::Escape($marker)) { Fail "README.md missing checker profile integration marker: $marker" }
+  }
+}
+
+$finalSmoke = Join-Path $rootPath "shared\scripts\harness-final-smoke.mjs"
+if (Test-Path -LiteralPath $finalSmoke) {
+  $finalSmokeText = Get-Content -LiteralPath $finalSmoke -Encoding UTF8 -Raw
+  foreach ($marker in @("HARNESS FINAL SMOKE PASSED", "canonical_repositories", "quick during coding", "release full checker reports", "submit two final reports")) {
+    if ($finalSmokeText -notmatch [regex]::Escape($marker)) { Fail "harness-final-smoke.mjs missing final test marker: $marker" }
   }
 }
 

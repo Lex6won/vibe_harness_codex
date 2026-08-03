@@ -11,6 +11,8 @@
 5. 설치 출처는 기본적으로 GitHub `https://github.com/Lex6won/vibecode-checker`만 사용한다.
 6. 망분리/offline 모드(`GVSKB_MODE=offline`)에서는 외부 GitHub clone을 시도하지 않는다. 외부망에서 받은 폴더를 반입해 로컬 경로로 지정하게 한다.
 7. 하네스 자체의 배포·업데이트 기준도 GitHub `https://github.com/Lex6won/vibe_harness_codex`다. 로컬 폴더는 작업 복사본이며, 기관별 차이는 우선 `shared/institution-profile.yaml`로 관리한다.
+8. 기본 하네스는 체커 내장 표준 프로파일(`dev-quick` 등)을 사용한다. 기관 고유 정책이 생기기 전에는 하네스가 별도 정책 사본을 MCP에 주입하지 않는다.
+9. 기관 고유 정책 때문에 `GVSKB_POLICIES_DIR`을 사용해야 하면 상대경로를 쓰지 말고 반드시 절대경로를 사용한다. MCP 서버의 작업 디렉터리는 사용자가 연 프로젝트 폴더일 수 있다.
 
 ## 2. 사용자 안내 문구
 
@@ -40,6 +42,8 @@ tools/vibecode-checker/
 - 설치 대상 경로를 사용자에게 보여준다.
 - 외부 네트워크 사용과 패키지 설치가 발생함을 알린다.
 - 설치 후 `server_status` 또는 CLI 상태 확인 결과를 기록한다.
+- 설치 후 quick 점검이 필요한 경우 `scan_path(profile="dev-quick")` 결과의 `profile`이 실제로 `dev-quick`인지 확인한다.
+- 체커가 `dev-quick`을 알 수 없는 프로파일로 보고 기본 프로파일로 대체하면 설치 성공과 별개로 quick 보안검증은 미완료다. GitHub 기준 최신 체커로 갱신하거나 기관 고유 정책 절대경로를 바로잡은 뒤 다시 확인한다.
 - 실패하면 실패 원인과 수동 설치 경로를 남긴다.
 
 ## 4. 제공 스크립트
@@ -80,5 +84,6 @@ node .\shared\scripts\checker-bootstrap.mjs --target .\tools\vibecode-checker --
 - 사용자 확인 없이 외부 네트워크에 접속하지 않는다.
 - 사용자 확인 없이 Python 패키지를 설치하지 않는다.
 - GitHub 주소를 임의로 바꾸지 않는다.
+- `GVSKB_POLICIES_DIR`에 `.claude/...` 같은 상대경로를 넣지 않는다.
 - 개인 이름, 이메일, 사번, PC명, IP 등 개인식별자를 caller 또는 설치 로그에 넣지 않는다.
 - 체커가 없는데 보안검증 완료, 패키지 승인 완료, 배포 준비 완료라고 표시하지 않는다.
