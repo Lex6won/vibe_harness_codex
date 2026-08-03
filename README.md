@@ -42,6 +42,8 @@
 | 스킬 | 15개 |
 | 골든 템플릿 | 6개 |
 | 성숙도 단계 | L0~L4 |
+| 하네스 공식 저장소 | `https://github.com/Lex6won/vibe_harness_codex` |
+| 체커 공식 저장소 | `https://github.com/Lex6won/vibecode-checker` |
 | Codex 최상위 진입점 | `AGENTS.md` |
 | 기관별 단일 설정 파일 | `shared/institution-profile.yaml` |
 | 벤더 중립 선언 파일 | `shared/harness.yaml` |
@@ -55,6 +57,8 @@
 | 검증 스크립트 | `shared/scripts/gg-validate.ps1` |
 | 체커 설치 보조 | `shared/scripts/checker-bootstrap.mjs` |
 | 레지스트리 카탈로그 export | `shared/scripts/package-catalog-export.mjs` |
+
+설치와 업데이트의 기준은 로컬 복사본이 아니라 위 두 GitHub 저장소입니다. 기관별 차이는 하네스 소스를 갈라치기하지 말고 `shared/institution-profile.yaml`을 먼저 수정해 반영합니다.
 
 ## 기관별 적용
 
@@ -180,20 +184,24 @@ intake-guide
 
 ## 사용 방법
 
-### 1. Codex용 하네스 복사
+### 1. GitHub에서 하네스 받기
 
-새 프로젝트에 `AGENTS.md`와 `shared`를 복사합니다.
-
-```powershell
-Copy-Item AGENTS.md C:\path\to\your-project\AGENTS.md
-Copy-Item -Recurse shared C:\path\to\your-project\shared
-```
-
-Claude Code용으로 사용할 때만 `.claude`를 복사합니다. Claude가 별도 하네스를 관리한다면 `.claude`는 이 저장소에서 사용하지 않아도 됩니다.
+새 기관이나 새 프로젝트는 공식 GitHub 저장소를 기준으로 하네스를 받습니다.
 
 ```powershell
-Copy-Item -Recurse .claude C:\path\to\your-project\.claude
+git clone https://github.com/Lex6won/vibe_harness_codex.git
+cd vibe_harness_codex
 ```
+
+이미 받은 하네스는 같은 저장소에서 갱신합니다.
+
+```powershell
+git pull origin main
+```
+
+다른 시군·기관에 맞출 때는 우선 `shared/institution-profile.yaml`만 수정합니다. 특정 업무 프로젝트에 `AGENTS.md`와 `shared/`를 복사해 넣어야 하는 경우에도 원본과 업데이트 기준은 `https://github.com/Lex6won/vibe_harness_codex`로 기록합니다.
+
+Claude Code용으로 사용할 때만 `.claude`를 함께 사용합니다. Claude가 별도 하네스를 관리한다면 `.claude`는 이 저장소에서 사용하지 않아도 됩니다.
 
 ### 2. AI 도구에서 시작
 
@@ -512,10 +520,22 @@ MCP 검사 결과가 깨끗하더라도 안전 증명이나 공식 승인으로 
 
 보안점검과 패키지 검사는 `vibecode-checker/gvskb`가 수행합니다. 하네스는 체커가 없을 때 자동으로 설치하지 않고, 사용자에게 먼저 확인합니다.
 
-기본 설치 출처는 다음 GitHub 저장소입니다.
+기본 설치·업데이트 출처는 다음 GitHub 저장소입니다.
 
 ```text
 https://github.com/Lex6won/vibecode-checker
+```
+
+직접 준비할 때는 다음처럼 공식 저장소를 기준으로 받습니다.
+
+```powershell
+git clone https://github.com/Lex6won/vibecode-checker.git .\tools\vibecode-checker
+```
+
+이미 받은 체커는 같은 저장소에서 갱신합니다.
+
+```powershell
+git -C .\tools\vibecode-checker pull origin main
 ```
 
 체커가 연결되어 있지 않으면 하네스는 다음을 안내합니다.
@@ -546,6 +566,14 @@ node .\shared\scripts\checker-bootstrap.mjs --target .\tools\vibecode-checker --
 ```
 
 망분리/offline 모드에서는 GitHub clone을 시도하지 않고, 외부망에서 받은 폴더를 반입해 로컬 경로로 지정합니다.
+
+## 업데이트 원칙
+
+- 하네스 업데이트: `git -C <vibe_harness_codex 경로> pull origin main`
+- 체커 업데이트: `git -C <vibecode-checker 경로> pull origin main`
+- 임의 ZIP, 개인 공유 폴더, 오래된 로컬 복사본을 배포 기준으로 삼지 않습니다.
+- 망분리 환경은 외부망에서 공식 GitHub 저장소를 받은 뒤 기관 반입 절차를 거쳐 로컬 경로로 지정합니다.
+- 기관별 정책 변경은 하네스 공통 파일을 복제해 새 계보를 만들기보다 `shared/institution-profile.yaml`에 먼저 반영합니다.
 
 레지스트리 초기 반입용 카탈로그는 현재 승인/차단 seed에서 생성할 수 있습니다.
 

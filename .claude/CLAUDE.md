@@ -12,6 +12,15 @@
 
 AI 도구가 공통으로 읽을 선언 파일은 `shared/harness.yaml`이다. 권한, 안전한 산출물 경로, 외부 쓰기 제한은 `shared/references/permission-model.yaml`을 따른다.
 
+## 공식 GitHub 기준
+
+하네스와 체커는 모두 GitHub 주소를 기준으로 설치·업데이트한다. 로컬 폴더는 작업 복사본이며, 배포 기준 원본이 아니다.
+
+- Codex 하네스: `https://github.com/Lex6won/vibe_harness_codex`
+- vibecode-checker: `https://github.com/Lex6won/vibecode-checker`
+
+다른 시군·기관에 맞출 때는 공통 하네스 파일을 임의로 갈라치기하기보다 `shared/institution-profile.yaml`을 먼저 수정한다. 망분리 환경은 외부망에서 공식 GitHub 저장소를 받은 뒤 기관 반입 절차를 거쳐 로컬 경로로 지정한다.
+
 ## 체커·레지스트리·하네스 책임 경계
 
 하네스는 패키지 분석기나 레지스트리 클라이언트가 아니다. 레지스트리는 PyPI/npm 패키지 허용·불허·보류 결정을 관리하고, `vibecode-checker(gvskb)`는 레지스트리 결과와 취약점·악성·cooldown·캐시 상태를 합쳐 단일 `verdict`를 반환한다. 하네스는 그 `verdict`를 사용자와 코딩 에이전트에게 실제로 적용하는 집행 계층이다.

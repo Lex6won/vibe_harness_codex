@@ -18,6 +18,10 @@ harness_enforcement:
   mode_owner: "information-security-team"
   verdict_source: "vibecode-checker/gvskb"
   registry_access: "checker-mediated-only"
+  canonical_repositories:
+    harness: "https://github.com/Lex6won/vibe_harness_codex"
+    checker: "https://github.com/Lex6won/vibecode-checker"
+    update_rule: "Use git clone/pull from the canonical repositories; use this profile for agency-specific overrides."
   package_ecosystems:
     - pypi
     - npm

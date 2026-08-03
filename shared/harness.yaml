@@ -1,6 +1,19 @@
 harness_version: 1
 name: "public-vibecode-harness"
 
+canonical_repositories:
+  rule: "Install and update the harness and checker from the official GitHub URLs. Treat local folders as working copies, not sources of truth."
+  harness:
+    name: "Lex6won/vibe_harness_codex"
+    url: "https://github.com/Lex6won/vibe_harness_codex"
+    install: "git clone https://github.com/Lex6won/vibe_harness_codex.git"
+    update: "git pull origin main"
+  checker:
+    name: "Lex6won/vibecode-checker"
+    url: "https://github.com/Lex6won/vibecode-checker"
+    install: "git clone https://github.com/Lex6won/vibecode-checker.git"
+    update: "git pull origin main"
+
 profile:
   institution_profile: "shared/institution-profile.yaml"
   maturity_model: "shared/references/service-maturity-model.md"

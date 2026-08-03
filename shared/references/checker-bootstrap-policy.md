@@ -10,6 +10,7 @@
 4. 사용자가 명시적으로 동의하기 전에는 GitHub clone, pip install, npm install, MCP 설정 변경을 하지 않는다.
 5. 설치 출처는 기본적으로 GitHub `https://github.com/Lex6won/vibecode-checker`만 사용한다.
 6. 망분리/offline 모드(`GVSKB_MODE=offline`)에서는 외부 GitHub clone을 시도하지 않는다. 외부망에서 받은 폴더를 반입해 로컬 경로로 지정하게 한다.
+7. 하네스 자체의 배포·업데이트 기준도 GitHub `https://github.com/Lex6won/vibe_harness_codex`다. 로컬 폴더는 작업 복사본이며, 기관별 차이는 우선 `shared/institution-profile.yaml`로 관리한다.
 
 ## 2. 사용자 안내 문구
 

@@ -2,6 +2,8 @@
 
 이 파일은 Codex 중심 하네스를 Claude Code에서 사용할 때의 호환 지침이다. 저장소의 원본 기준은 루트 `AGENTS.md`, `shared/harness.yaml`, `shared/institution-profile.yaml`, `shared/references/permission-model.yaml`, `shared/references/harness-enforcement-contract.yaml`이다.
 
+공식 설치·업데이트 기준은 Codex 하네스 `https://github.com/Lex6won/vibe_harness_codex`, 체커 `https://github.com/Lex6won/vibecode-checker`다. 로컬 폴더는 작업 복사본이며, 다른 기관 적용은 우선 `shared/institution-profile.yaml`로 분리한다.
+
 공무원에게는 쉬운 업무 질문만 하고, 기술 결정은 기관 프로파일과 공통 reference로 정한다. 운영 코드는 기관별 Track, 개발/운영 환경, 언어, DBMS, 패키지 제한을 우선 따른다.
 
 핵심 규칙:

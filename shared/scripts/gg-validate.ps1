@@ -69,6 +69,8 @@ if (Test-Path -LiteralPath $institutionProfile) {
     if ($profile -notmatch [regex]::Escape($marker)) { Fail "institution-profile.yaml missing required marker: $marker" }
   }
   if ($profile -notmatch "vibecode-checker") { Warn "institution-profile.yaml should declare vibecode-checker MCP policy" }
+  if ($profile -notmatch [regex]::Escape("https://github.com/Lex6won/vibe_harness_codex")) { Fail "institution-profile.yaml must declare canonical harness GitHub repository" }
+  if ($profile -notmatch [regex]::Escape("https://github.com/Lex6won/vibecode-checker")) { Fail "institution-profile.yaml must declare canonical checker GitHub repository" }
   if ($profile -notmatch "production:\s*\r?\n\s+server:") { Fail "institution-profile.yaml must define production.server" }
   if ($profile -notmatch "development:\s*\r?\n\s+server:") { Fail "institution-profile.yaml must define development.server" }
   if ($profile -notmatch "allowed_function_implementation_languages:\s*\r?\n\s+- python\s*\r?\n\s+- javascript") { Fail "institution-profile.yaml must limit implementation languages to python and javascript" }
@@ -102,6 +104,7 @@ if (Test-Path -LiteralPath $checkerBootstrap) {
   foreach ($marker in @("https://github.com/Lex6won/vibecode-checker", "사용자", "확인", "checker-bootstrap.mjs", "--yes", "--install-python", "GVSKB_MODE=offline")) {
     if ($bootstrapText -notmatch [regex]::Escape($marker)) { Fail "checker-bootstrap-policy.md missing required marker: $marker" }
   }
+  if ($bootstrapText -notmatch [regex]::Escape("https://github.com/Lex6won/vibe_harness_codex")) { Fail "checker-bootstrap-policy.md must declare the canonical harness GitHub repository" }
 }
 
 $runtimePolicy = Join-Path $rootPath "shared\references\runtime-selection-policy.yaml"
@@ -155,6 +158,9 @@ if (Test-Path -LiteralPath $trustedRegistry) {
 $harness = Join-Path $rootPath "shared\harness.yaml"
 if (Test-Path -LiteralPath $harness) {
   $harnessText = Get-Content -LiteralPath $harness -Encoding UTF8 -Raw
+  if ($harnessText -notmatch "canonical_repositories:") { Fail "harness.yaml must declare canonical_repositories" }
+  if ($harnessText -notmatch [regex]::Escape("https://github.com/Lex6won/vibe_harness_codex")) { Fail "harness.yaml must declare canonical harness GitHub repository" }
+  if ($harnessText -notmatch [regex]::Escape("https://github.com/Lex6won/vibecode-checker")) { Fail "harness.yaml must declare canonical checker GitHub repository" }
   if ($harnessText -notmatch "institution-profile.yaml") { Fail "harness.yaml must point to shared/institution-profile.yaml" }
   if ($harnessText -notmatch "permission-model.yaml") { Fail "harness.yaml must point to permission-model.yaml" }
   if ($harnessText -notmatch "runtime-selection-policy.yaml") { Fail "harness.yaml must point to runtime-selection-policy.yaml" }
@@ -171,6 +177,14 @@ if (Test-Path -LiteralPath $harness) {
   if ($harnessText -notmatch "package-catalog-export.mjs") { Fail "harness.yaml must point to package-catalog-export.mjs" }
   if ($harnessText -notmatch "implementation_languages:\s*\r?\n\s+- `"python`"\s*\r?\n\s+- `"javascript`"") { Fail "harness.yaml must declare python/javascript implementation languages" }
   if ($harnessText -notmatch "safe_outputs:") { Fail "harness.yaml must declare safe_outputs" }
+}
+
+$readme = Join-Path $rootPath "README.md"
+if (Test-Path -LiteralPath $readme) {
+  $readmeText = Get-Content -LiteralPath $readme -Encoding UTF8 -Raw
+  foreach ($marker in @("https://github.com/Lex6won/vibe_harness_codex", "https://github.com/Lex6won/vibecode-checker", "git clone https://github.com/Lex6won/vibe_harness_codex.git", "git clone https://github.com/Lex6won/vibecode-checker.git")) {
+    if ($readmeText -notmatch [regex]::Escape($marker)) { Fail "README.md missing GitHub distribution marker: $marker" }
+  }
 }
 
 $catalogExportScript = Join-Path $rootPath "shared\scripts\package-catalog-export.mjs"
