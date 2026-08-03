@@ -45,9 +45,11 @@
 - Track 변경, 사용자 범위 변경, 대민 전환, DB/인증 큰 변경은 신규 설계 또는 배포·이관 흐름으로 승격한다.
 
 ### 배포·이관 준비
-`stage-advisor → release-packager → security-checker(full) → deploy-doc-writer → submit-packager`
+`stage-advisor → release-packager → security-checker(full) → submit-packager`
 
-- MCP full 결과 없이는 제출 준비 완료로 표시하지 않는다.
+- MCP full 결과와 체커가 저장한 HTML/JSON 리포트 2종 없이는 제출 준비 완료로 표시하지 않는다.
+- submit-packager는 최종 리포트 2종을 보안팀 또는 AX 전담팀에 제출해야 함을 안내한다.
+- deploy-doc-writer는 운영팀 설치 인계나 기관 양식이 필요할 때만 조건부로 호출한다.
 - L4 정식 운영 승인 여부는 하네스가 단독 판정하지 않는다.
 
 ### 파일럿 평가
@@ -65,7 +67,7 @@
 - denied 패키지를 요구함.
 - denied/unknown/restricted 패키지를 요구했지만 `shared/references/package-alternatives.yaml` 기준 대체안, 기능 축소안, 예외/검토 요청 중 하나가 기록되지 않음.
 - 보안검증 결과가 block인데 수정 없이 다음 단계로 가려 함.
-- 배포·이관 요청인데 필수 산출물 또는 MCP 결과가 없음.
+- 배포·이관 요청인데 full checker 결과, HTML 리포트, JSON 증적, 또는 제출 안내가 없음.
 
 ## 충돌 해결
 

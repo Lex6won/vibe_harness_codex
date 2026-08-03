@@ -28,6 +28,20 @@ python:
     - requests
     - httpx
     - beautifulsoup4
+  restricted_conditions:
+    requests:
+      - "server-side only"
+      - "external endpoint must be approved by network profile"
+      - "timeouts required"
+      - "no personal/sensitive data to external API without approval"
+    httpx:
+      - "server-side only"
+      - "explicit timeout/client configuration required"
+      - "external endpoint must be approved by network profile"
+      - "no personal/sensitive data to external API without approval"
+    beautifulsoup4:
+      - "parsing approved internal/imported documents only"
+      - "no uncontrolled external web crawling from admin-network"
 npm_frontend:
   core:
     - react
@@ -41,6 +55,11 @@ npm_frontend:
     - '@tanstack/react-query'
   restricted:
     - axios
+  restricted_conditions:
+    axios:
+      - "prefer browser fetch wrapper first"
+      - "same-origin or approved internal API only"
+      - "no direct external SaaS/BaaS endpoint from browser"
 npm_backend:
   core:
     - express
@@ -54,3 +73,12 @@ npm_backend:
   restricted:
     - node-fetch
     - undici
+  restricted_conditions:
+    node-fetch:
+      - "server-side only"
+      - "approved endpoint and timeout required"
+      - "no personal/sensitive data to external API without approval"
+    undici:
+      - "server-side only"
+      - "approved endpoint and timeout required"
+      - "no personal/sensitive data to external API without approval"

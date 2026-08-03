@@ -31,12 +31,29 @@ $manifest = [ordered]@{
     verdict_source = "vibecode-checker/gvskb"
     registry_access = "checker-mediated-only"
     implementation_languages = @("python", "javascript")
+    pass_freshness_target = "1 hour"
+    ordinary_user_message_policy = "silent-pass-one-line-block"
   }
   plugins = @{}
   dependencies = @{}
   feature_discovery = @{}
   artifacts = @{}
-  security_check = @{}
+  security_check = @{
+    profile = "unknown"
+    full_scan_required = $false
+    full_scan_completed = $false
+    tools_used = @()
+    dependency_audit_merged = $false
+    checker_saved_reports = @{}
+    final_submission_reports = @{
+      submission_required = $false
+      submission_target = "unknown"
+      notice_given = $false
+      official_approval_claimed = $false
+    }
+    conditional_documents = @()
+    missing_evidence = @()
+  }
   checker_bootstrap = @{
     checker_status = "unknown"
     checker_source = "unknown"
@@ -45,6 +62,7 @@ $manifest = [ordered]@{
   }
   pilot_metrics = @{}
   exceptions = @()
+  overrides = @()
   gates = @{}
 }
 $path = Join-Path $Workspace "vibecode-manifest.json"

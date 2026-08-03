@@ -88,6 +88,9 @@ if (Test-Path -LiteralPath $enforcementContract) {
   foreach ($marker in @("freshness_policy:", "typosquat_policy:", "bypass_policy:", "default_mode: MONITOR")) {
     if ($contractText -notmatch [regex]::Escape($marker)) { Fail "harness-enforcement-contract.yaml missing required enforcement update: $marker" }
   }
+  foreach ($marker in @("kev_checked", "version_exact", "source_scope", "registry_stale", "ordinary_user_message", "structured_override_shape")) {
+    if ($contractText -notmatch [regex]::Escape($marker)) { Fail "harness-enforcement-contract.yaml missing gvskb 2026-08-03 signal policy: $marker" }
+  }
   foreach ($marker in @("malicious", "registry_rejected", "not_found", "checker-mediated", "python", "javascript")) {
     if ($contractText -notmatch [regex]::Escape($marker)) { Fail "harness-enforcement-contract.yaml missing required policy text: $marker" }
   }
@@ -115,6 +118,9 @@ if (Test-Path -LiteralPath $packageGovernance) {
   foreach ($marker in @("package_governance_version:", "source_of_truth:", "statuses:", "checker_verdict_mapping:", "absolute_block:", "promotion_rules:", "replacement_rules:", "future_platform_integration:", "checker_limitations:")) {
     if ($governanceText -notmatch [regex]::Escape($marker)) { Fail "package-governance.yaml missing required marker: $marker" }
   }
+  foreach ($marker in @("checker_signal_handling:", "kev_checked", "version_exact", "source_scope", "structured_override:")) {
+    if ($governanceText -notmatch [regex]::Escape($marker)) { Fail "package-governance.yaml missing checker signal marker: $marker" }
+  }
 }
 
 $lifecycleGates = Join-Path $rootPath "shared\references\lifecycle-quality-gates.yaml"
@@ -122,6 +128,9 @@ if (Test-Path -LiteralPath $lifecycleGates) {
   $lifecycleText = Get-Content -LiteralPath $lifecycleGates -Encoding UTF8 -Raw
   foreach ($marker in @("lifecycle_quality_gates_version:", "stages:", "idea:", "design:", "implementation:", "test:", "release:", "balance_checks:")) {
     if ($lifecycleText -notmatch [regex]::Escape($marker)) { Fail "lifecycle-quality-gates.yaml missing required marker: $marker" }
+  }
+  foreach ($marker in @("checker_profiles:", "quick:", "standard:", "full:", "two_report_release_default", "full_checker_html_and_json_saved", "user_notice.final_reports_must_be_submitted")) {
+    if ($lifecycleText -notmatch [regex]::Escape($marker)) { Fail "lifecycle-quality-gates.yaml missing final harness marker: $marker" }
   }
 }
 
@@ -164,6 +173,14 @@ if (Test-Path -LiteralPath $harness) {
   if ($harnessText -notmatch "safe_outputs:") { Fail "harness.yaml must declare safe_outputs" }
 }
 
+$catalogExportScript = Join-Path $rootPath "shared\scripts\package-catalog-export.mjs"
+if (Test-Path -LiteralPath $catalogExportScript) {
+  $catalogScriptText = Get-Content -LiteralPath $catalogExportScript -Encoding UTF8 -Raw
+  foreach ($marker in @("scope_catalog", "DO_NOT_IMPORT_AS_APPROVED_WITHOUT_VERSION", "registry_import_entries", "Name-only approved/restricted entries")) {
+    if ($catalogScriptText -notmatch [regex]::Escape($marker)) { Fail "package-catalog-export.mjs missing registry response marker: $marker" }
+  }
+}
+
 $permissionModel = Join-Path $rootPath "shared\references\permission-model.yaml"
 if (Test-Path -LiteralPath $permissionModel) {
   $permissionText = Get-Content -LiteralPath $permissionModel -Encoding UTF8 -Raw
@@ -183,6 +200,14 @@ if (Test-Path -LiteralPath $deployContext) {
 # Manifest schema must parse.
 $schema = Join-Path $rootPath "shared\templates\vibecode-manifest.schema.json"
 try { Get-Content -LiteralPath $schema -Encoding UTF8 -Raw | ConvertFrom-Json | Out-Null; Write-Output "OK manifest schema" } catch { Fail "INVALID manifest schema: $($_.Exception.Message)" }
+try {
+  $schemaText = Get-Content -LiteralPath $schema -Encoding UTF8 -Raw
+  foreach ($marker in @("final_submission_reports", "html_report", "json_evidence", "submission_required", "notice_given", "scan_installed_packages", "scan_vendor_bundles")) {
+    if ($schemaText -notmatch [regex]::Escape($marker)) { Fail "vibecode-manifest.schema.json missing final report marker: $marker" }
+  }
+} catch {
+  Fail "Unable to inspect manifest schema markers: $($_.Exception.Message)"
+}
 foreach ($schemaPath in @("shared\templates\institution-profile.schema.json", "shared\templates\harness.schema.json")) {
   $fullSchemaPath = Join-Path $rootPath $schemaPath
   try { Get-Content -LiteralPath $fullSchemaPath -Encoding UTF8 -Raw | ConvertFrom-Json | Out-Null; Write-Output "OK $schemaPath" } catch { Fail "INVALID ${schemaPath}: $($_.Exception.Message)" }
@@ -212,7 +237,7 @@ $workspacePath = Join-Path $rootPath $Workspace
 if (Test-Path -LiteralPath $workspacePath) {
   $required = @("00_feature_brief.md", "00_작업현황.md", "vibecode-manifest.json")
   if ($Level -in @("L2","L3")) { $required += @("01_PRD_서비스기획서.md", "04_개발스택_운영환경.md", "05_보안점검보고서.md") }
-  if ($Level -eq "L3") { $required += @("06_MCP_검증결과.md", "07_서버설치_배포가이드.md", "08_배포신청서.md") }
+  if ($Level -eq "L3") { $required += @("source\.check-reports") }
   foreach ($f in $required) { if (!(Test-Path -LiteralPath (Join-Path $workspacePath $f))) { Warn "workspace artifact not found for ${Level}: $f" } }
 }
 

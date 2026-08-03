@@ -14,6 +14,7 @@ function stripQuotes(value) {
 
 function parseApprovedPackages(text) {
   const entries = [];
+  const conditions = parseRestrictedConditions(text);
   let section = null;
   let bucket = null;
 
@@ -46,14 +47,68 @@ function parseApprovedPackages(text) {
     entries.push({
       ecosystem,
       package: name,
-      status: bucket === "core" ? "APPROVED" : "CONDITIONAL",
+      scope: bucket === "core" ? "allowed_name" : "restricted_name",
+      registry_import_status: "DO_NOT_IMPORT_AS_APPROVED_WITHOUT_VERSION",
       source_file: "shared/references/approved-packages.yaml",
       source_section: `${section}.${bucket}`,
-      approval_basis: bucket === "core" ? "BASELINE_BULK" : "BASELINE_CONDITIONAL",
+      basis: bucket === "core" ? "HARNESS_ALLOWED_NAME_SCOPE" : "HARNESS_RESTRICTED_NAME_SCOPE",
+      conditions: conditions.get(`${ecosystem}:${name}`) || [],
+      note: "Name-only catalog entry. Registry APPROVED requires an exact package version and checker evidence.",
     });
   }
 
   return entries;
+}
+
+function parseRestrictedConditions(text) {
+  const conditions = new Map();
+  let section = null;
+  let inConditions = false;
+  let currentPackage = null;
+
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.replace(/\s+#.*$/, "");
+    const top = line.match(/^([A-Za-z0-9_]+):\s*$/);
+    if (top) {
+      section = top[1];
+      inConditions = false;
+      currentPackage = null;
+      continue;
+    }
+
+    if (/^\s{2}restricted_conditions:\s*$/.test(line)) {
+      inConditions = true;
+      currentPackage = null;
+      continue;
+    }
+
+    const pkg = line.match(/^\s{4}(.+?):\s*$/);
+    if (pkg && inConditions && section) {
+      currentPackage = stripQuotes(pkg[1]);
+      let ecosystem = null;
+      if (section === "python") ecosystem = "pypi";
+      if (section === "npm_frontend" || section === "npm_backend") ecosystem = "npm";
+      if (ecosystem && currentPackage) {
+        conditions.set(`${ecosystem}:${currentPackage}`, []);
+      }
+      continue;
+    }
+
+    const item = line.match(/^\s{6}-\s+(.+?)\s*$/);
+    if (item && inConditions && section && currentPackage) {
+      let ecosystem = null;
+      if (section === "python") ecosystem = "pypi";
+      if (section === "npm_frontend" || section === "npm_backend") ecosystem = "npm";
+      if (ecosystem) {
+        const key = `${ecosystem}:${currentPackage}`;
+        const list = conditions.get(key) || [];
+        list.push(stripQuotes(item[1]));
+        conditions.set(key, list);
+      }
+    }
+  }
+
+  return conditions;
 }
 
 function parseDenylist(text) {
@@ -109,19 +164,20 @@ const approved = parseApprovedPackages(readFileSync(approvedPath, "utf8"));
 const denied = parseDenylist(readFileSync(deniedPath, "utf8"));
 
 const denyKeys = new Set(denied.map((entry) => `${entry.ecosystem}:${entry.package}`));
-const entries = [
-  ...approved.filter((entry) => !denyKeys.has(`${entry.ecosystem}:${entry.package}`)),
-  ...denied,
-];
+const scopeCatalog = approved.filter((entry) => !denyKeys.has(`${entry.ecosystem}:${entry.package}`));
+const registryImportEntries = denied;
 
 const payload = {
-  package_catalog_export_version: 1,
+  package_catalog_export_version: 2,
   generated_by: "shared/scripts/package-catalog-export.mjs",
-  registry_import_contract: "allowlist entries become APPROVED/CONDITIONAL; denylist entries become REJECTED; absence remains UNKNOWN",
-  entries,
+  registry_import_contract: "Name-only approved/restricted entries are scope hints, not registry APPROVED decisions. Denylist package entries become REJECTED. Absence remains UNKNOWN.",
+  registry_import_entries: registryImportEntries,
+  scope_catalog: scopeCatalog,
+  denied_patterns_note: "restricted_patterns are harness gate patterns and are not registry package decisions.",
 };
 
 mkdirSync(dirname(out), { recursive: true });
 writeFileSync(out, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
 console.log(`WROTE ${out}`);
-console.log(`ENTRIES ${entries.length}`);
+console.log(`REGISTRY_IMPORT_ENTRIES ${registryImportEntries.length}`);
+console.log(`SCOPE_CATALOG_ENTRIES ${scopeCatalog.length}`);

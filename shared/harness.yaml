@@ -61,11 +61,18 @@ safe_outputs:
   workspace: "_workspace/"
   source: "_workspace/source/"
   package: "dist/"
+  release_default_submission:
+    - "vibecode-checker_saved_html_report"
+    - "vibecode-checker_saved_json_evidence"
+  release_submission_notice: "Submit the final two checker reports to the security team or AX team; they are review evidence, not official approval."
   report_artifact_ids:
     - "security_report"
     - "mcp_result_report"
+  conditional_artifact_ids:
     - "deployment_guide"
+    - "deployment_application"
     - "exception_request"
+    - "package_review_request"
 
 validation:
   local: "shared/scripts/gg-validate.ps1"

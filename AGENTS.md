@@ -41,10 +41,13 @@ The `.claude/` directory is a Claude Code compatibility copy. Do not treat it as
 - Use `shared/references/package-alternatives.yaml` before package exceptions. If a package is denied, unknown, or risky, propose a safe replacement or no-new-package implementation path before stopping.
 - Use `shared/references/trusted-registry-integration.yaml` for the checker-mediated registry contract. Do not call a registry service directly for normal package decisions; call `vibecode-checker` / `gvskb`, which returns the registry-backed verdict fields.
 - Treat `malicious`, `registry_rejected`, `not_found`, and `in_kev=true` as absolute blocks in every mode. Typosquat heuristics for an existing package are warnings in the harness, not standalone block reasons.
+- Read gvskb's 2026-08-03 dependency signals correctly: `kev_checked=false` means `in_kev=false` is not proof of no KEV match; `version_exact=false` must not be a standalone block reason; `source_scope` controls whether ENFORCE blocks unknown direct dependencies only; `registry_status` must be `ok` before treating a registry allow decision as usable.
 - Start registry-backed rollout in MONITOR unless the institution profile explicitly says otherwise. Recommended transition is MONITOR for 2 weeks, then WARN after security/operations confirmation; ENFORCE requires coverage criteria.
 - Determine and record `env_grade` from the target environment: default personal-PC harness work to E1, internal server or CI to E2, and citizen-facing/sensitive operation to E3 evidence-only handoff. Do not let a developer silently downgrade the grade.
 - Use `shared/references/checker-bootstrap-policy.md` when `vibecode-checker` is missing. Ask the user before GitHub clone or package installation. The default source is `https://github.com/Lex6won/vibecode-checker`; in offline mode, require a locally imported folder.
 - Use `shared/golden-templates/` as the starting point for implementation. Do not create an arbitrary stack outside an approved track.
+- Apply checker effort proportionally: quick during coding for risky changes only, standard after implementation completion, and full before deployment/security/AX submission.
+- For release readiness, the default final submission is exactly the two files saved by `vibecode-checker`: the human HTML report and the JSON evidence report. Tell the user these two final reports must be submitted to the security team or AX team. Extra deployment forms are conditional.
 - Keep generated work inside `_workspace/`, `_workspace/source/`, or `dist/` unless the user explicitly asks otherwise.
 - Do not push to GitHub, deploy to production, send external messages, or write to external systems unless the user explicitly asks for that action.
 - Do not claim official security approval. The harness may say "ready for submission", "missing evidence", or "requires human approval".
@@ -59,16 +62,21 @@ For L1 prototypes, keep the minimum evidence chain:
 - `_workspace/source/`
 - `_workspace/vibecode-manifest.json`
 
-For L2/L3, add the appropriate structured artifacts from `shared/templates/`, especially:
+For L2, add the appropriate structured artifacts from `shared/templates/`, especially:
 
 - PRD
 - screen and feature design
 - DB table definition when storage is needed
 - development stack and runtime environment
 - security report
-- MCP result report
 - package review request or exception when a new/unknown/restricted/denied package affects implementation
-- deployment guide and request documents when release is requested
+
+For L3 release readiness, do not turn the harness into a document factory. The default final submission is:
+
+- vibecode-checker saved HTML report
+- vibecode-checker saved JSON evidence report
+
+Create deployment guides, request documents, exception forms, or package review forms only when the institution requires them or unresolved risk needs a reviewer path.
 
 ## Security
 
@@ -77,3 +85,7 @@ Security checks are performed through `vibecode-checker` / `gov-vibe-security-kb
 If the checker is not installed or connected, tell the user that security/package validation cannot be completed yet and ask whether to install or prepare it from `https://github.com/Lex6won/vibecode-checker`. Do not install silently. A helper exists at `shared/scripts/checker-bootstrap.mjs`; it requires explicit `--yes` before cloning and separate `--install-python` before Python package installation.
 
 For package governance, the checker is the only normal integration point. The registry manages PyPI/npm allow and deny decisions, the checker combines that registry result with vulnerability and malicious-package evidence, and the harness enforces the resulting verdict for users and coding agents. A block must always include the blocked item, verdict, applied mode, env_grade, replacement or safe-version path, and review/exception route when needed.
+
+Keep ordinary user security messages short. Passing package checks should normally be silent; blocks should be one action-oriented sentence. Detailed fields such as `kev_checked`, `source_scope`, `registry_stale`, cache state, and `registry_status=item_failed` belong in manifest/report records for staff, not in the civil-servant coding flow.
+
+Before release submission, full checker validation must include `scan_path`, dependency checks, installed-package checks when installed inventories exist, vendor-bundle checks when `vendor_bundles` is returned, and `render_report(format="both", save=true)`. Use the checker-saved report paths; do not rewrite the same report under a new harness filename.

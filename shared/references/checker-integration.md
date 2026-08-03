@@ -11,6 +11,66 @@
 5. 체커가 끝내 연결되지 않으면 기획·설계는 계속할 수 있지만, 패키지 설치·운영 이관·보안검증 완료 처리는 하지 않는다.
 6. 패키지 결정은 레지스트리에 직접 묻지 않는다. 하네스는 `scan_dependencies` 또는 동등한 gvskb 기능을 호출하고, gvskb가 레지스트리 판정까지 포함한 단일 verdict를 반환한다고 본다.
 7. 소스 보안점검은 `_workspace` 문서가 아니라 실제 소스 경로인 `_workspace/source/` 또는 사용자가 지정한 코드 경로를 대상으로 한다.
+8. `render_report`가 저장한 보고서는 에이전트가 다른 위치나 다른 이름으로 다시 저장하지 않는다. 체커가 반환한 `saved.markdown`, `saved.html`, `saved.json` 경로를 그대로 사용자와 manifest에 기록한다.
+
+## 1-1. 단계별 체커 사용 강도
+
+하네스는 체커를 많이 호출하는 것이 목적이 아니다. 사용자의 흐름을 막지 않으면서, 위험이 커지는 단계에서만 검사 강도를 올린다.
+
+| 단계 | 프로파일 | 체커 사용 | 사용자 경험 |
+|---|---|---|---|
+| 코딩 중 | quick | 변경 파일, 새 패키지, 핵심 위험만 확인 | 통과는 조용히, 차단은 한 줄 조치 |
+| 개발 완료 후 | standard | 전체 source와 선언된 의존성 점검 | 보안점검 요약과 수정 경로 |
+| 배포 전 | full | 전체 소스, 의존성, 설치본, 벤더 번들, 최종 리포트 저장 | 최종 제출 리포트 2종 경로 안내 |
+
+### quick — 코딩 중 간소화 점검
+
+quick은 모든 룰을 매번 적용하는 흐름이 아니다. 다음 경우에만 실행하거나 예약한다.
+
+- 새 패키지를 추가하거나 `requirements.txt`, `package.json`, lockfile을 바꾼 경우
+- 인증/권한, 개인정보/민감정보, 파일 업로드, 외부 API/CDN/LLM/MCP, SQL/DB 쿼리, 명령 실행, `eval` 계열 코드를 바꾼 경우
+- 사용자가 “중간 점검”, “커밋 전 확인”, “저장 전 확인”, “안전한지 봐줘”라고 요청한 경우
+
+quick에서 반드시 보는 안전장치는 아래로 제한한다.
+
+- 비밀값 하드코딩
+- 개인정보·민감정보 샘플 또는 평문 저장
+- denied, `not_found`, `registry_rejected`, `malicious`, `in_kev=true` 패키지
+- SQL Injection, 파일 업로드 경로/확장자/크기 위험
+- `eval`, 명령 실행, unsafe deserialization
+- 기관 정책 밖 외부통신 또는 CDN
+- 기관 프로파일 밖 구현언어, DBMS, 런타임, 운영서버 사양 위반
+
+단순 UI 문구, 문서, 스타일 수정에는 자동 full scan을 하지 않는다.
+
+### standard — 개발 완료 후 점검
+
+개발 완료 후에는 `_workspace/source/` 또는 사용자가 지정한 실제 소스 경로 전체를 대상으로 `scan_path`를 실행한다. 의존성 파일이나 lockfile이 있으면 `scan_dependencies`를 실행하고, 결과를 `dependency_audit`에 병합해 보고서에 포함한다.
+
+standard는 배포 제출이 아니라 “배포 후보가 될 수 있는지”를 보는 단계다. critical/high/block이 남아 있으면 배포 준비로 넘기지 않는다.
+
+### full — 배포 전 최종 점검과 제출 리포트
+
+배포, 공식 개발환경 이관, 보안성검토, AX/보안팀 제출 전에는 full을 반드시 수행한다.
+
+full 흐름:
+
+1. `scan_path`로 실제 소스 경로를 검사한다.
+2. `requirements.txt`, `package.json`, lockfile이 있으면 `scan_dependencies`를 실행한다.
+3. `.venv`, `node_modules`, wheel 등 설치 흔적이 있으면 `scan_installed_packages`를 실행한다.
+4. `scan_path` 결과에 `vendor_bundles`가 있으면 `scan_vendor_bundles`를 실행한다.
+5. 의존성, 설치본, 벤더 번들 결과를 `dependency_audit`에 병합한다.
+6. `render_report(format="both", save=true)`를 호출한다.
+7. 체커가 저장한 `.html`과 `.json` 경로를 사용자에게 알려주고 manifest에 기록한다.
+
+배포 전 기본 제출자료는 체커가 저장한 두 파일이다.
+
+- 사람용 최종 보안점검 리포트: `saved.html`
+- 증적용 원본 JSON 리포트: `saved.json`
+
+하네스는 이 두 파일을 보안팀 또는 AX 전담팀에 제출해야 한다는 사실을 반드시 안내한다. 이 리포트는 공식 승인서가 아니라 보안 검토를 요청하기 위한 증적이다.
+
+배포신청서, 예외신청서, 패키지 검토요청서, 서버설치 가이드는 기본 생성물이 아니다. 기관 양식 요구, 미해결 예외, 패키지 검토, 운영팀 설치 인계가 있을 때만 조건부로 만든다.
 
 ## 2. 하네스가 읽어야 하는 필드
 
@@ -22,10 +82,14 @@
 - `checked`
 - `is_malicious_package`
 - `in_kev`
+- `kev_checked`
 - `max_cve`
 - `cooldown.ok`
+- `version_exact`
+- `source_scope`
 - `registry_status`
 - `registry_decision`
+- `registry_stale`
 - `heuristics.typosquat_warning`
 
 manifest/lockfile 단위로는 다음 필드를 기록한다.
@@ -36,7 +100,24 @@ manifest/lockfile 단위로는 다음 필드를 기록한다.
 - `registry_status`
 - `source_kind`
 
-필드가 없으면 “안전”이 아니라 “판정 근거 부족”으로 본다. 특히 `checked=false`, `unknown`, `error`는 안전 통과가 아니다.
+필드가 없으면 “안전”이 아니라 “판정 근거 부족”으로 본다. 특히 `checked=false`, `unknown`, `error`, `item_failed`는 안전 통과가 아니다.
+
+### 2-1. 2026-08-03 gvskb 신호 변경
+
+`in_kev=false`만으로 “실제 악용 중 아님”이라고 해석하지 않는다. 반드시 `kev_checked`를 같이 본다.
+
+| 신호 | 하네스 해석 |
+|---|---|
+| `in_kev=true` | 모든 모드에서 차단 |
+| `kev_checked=false` + `in_kev=false` | KEV 대조를 못 한 상태. `in_kev=false`를 통과 근거로 쓰지 않음 |
+| `version_exact=false` | 경계값/범위 제약 기반 추정. 이것만으로 차단하지 않음 |
+| `source_scope=single/manifest` | 사람이 직접 고른 의존성. ENFORCE에서 unknown 차단 대상 |
+| `source_scope=lockfile/installed` | 전이/관측 의존성. ENFORCE에서도 unknown만으로는 차단하지 않음 |
+| `registry_stale=true` | 낡은 차단 또는 열화 상태. 차단을 경고로 낮추지 않음 |
+
+`registry_status`는 `ok`일 때만 기관 판정을 받은 것으로 본다. `unreachable`, `rejected`, `item_failed`, `unauthorized`, `disabled` 및 앞으로 추가될 알 수 없는 값은 “기관 판정 없음”으로 처리한다. 값을 하나씩 허용 처리하면 새 enum이 추가될 때 모르는 값이 통과로 떨어질 수 있다.
+
+`kev_checked`가 없던 과거 결과를 읽어야 한다면 `cache_sources_used`에 `cisa-kev`가 있을 때만 KEV 대조가 된 것으로 본다. `osv-malicious` 같은 다른 인텔 소스가 있어도 KEV 대조를 했다는 뜻은 아니다.
 
 ## 3. verdict 우선순위
 
@@ -74,7 +155,9 @@ manifest/lockfile 단위로는 다음 필드를 기록한다.
 | vulnerable UNKNOWN | warn | warn | block |
 | cooldown_hold | log | warn | block |
 | checked_stale | log | warn | warn |
-| unknown / error | log | warn | block |
+| unknown / error, source_scope 없음 | log | warn | block |
+| unknown, source_scope single/manifest | log | warn | block |
+| unknown, source_scope lockfile/installed | log | warn | warn |
 | registry_approved + checked=true | pass | pass | pass |
 | registry_approved + checked=false | pass | warn | warn |
 | checked_clean | pass | pass | pass |
@@ -83,6 +166,8 @@ manifest/lockfile 단위로는 다음 필드를 기록한다.
 MONITOR는 도입 초기 관찰 모드, WARN은 운영 기본값 후보, ENFORCE는 체커와 레지스트리 커버리지가 충분할 때 사용한다. 운영 모드 선택은 보안·운영팀 정책이다.
 
 타이포스쿼팅 신호는 휴리스틱이다. 하네스에서는 기존 패키지에 대한 단독 차단 근거로 쓰지 않고 경고로만 제시한다. 다만 레지스트리는 같은 신호를 자동 승인 보류(`UNDER_REVIEW`) 근거로 쓸 수 있다. 공식 저장소에 없는 `not_found`는 휴리스틱이 아니라 사실 확인이므로 절대 차단이다.
+
+`version_exact=false`인 취약점 판정은 “이 제약이 취약한 버전을 허용할 수 있다”는 신호이지 실제 설치본 관측이 아니다. 따라서 이 신호만으로 설치를 막지 않는다. 다만 안전 버전 고정, lockfile 생성, 재검사를 제안한다. `malicious`, `registry_rejected`, `not_found`, `in_kev=true` 같은 절대 규칙은 `version_exact`와 무관하게 적용한다.
 
 ## 5. env_grade
 
@@ -106,7 +191,20 @@ MONITOR는 도입 초기 관찰 모드, WARN은 운영 기본값 후보, ENFORCE
 
 오래된 registry rejected 캐시는 경고로 낮추지 않는다. “거절 이력은 있으나 현재 레지스트리 확인이 오래됨/불가”라고 표시하고 계속 차단한다.
 
-## 6-1. 판정 신선도 비대칭 규칙
+### 6-1. 카탈로그 반입 원칙
+
+하네스의 `approved-packages.yaml`은 “이 이름은 하네스 범위 안에서 사용할 수 있다”는 이름 단위 scope다. 레지스트리의 `APPROVED`는 `(생태계, 이름, 버전)`에 대한 버전 단위 판정이다. 따라서 버전 없는 approved 항목을 레지스트리 `APPROVED`로 반입하지 않는다.
+
+| 하네스 카탈로그 | 레지스트리 반입 |
+|---|---|
+| approved/core 이름 | scope_catalog로만 전달. exact version + checker clean 후 자동 승인 가능 |
+| restricted 이름 | scope_catalog + 조건으로 전달. 조건이 집행 가능할 때만 조건부 승인 후보 |
+| denied package 이름 | `REJECTED` 반입 가능 |
+| denied/restricted pattern | 레지스트리 반입 대상 아님. 하네스 게이트 영역 |
+
+이 원칙 때문에 초기 레지스트리 승인 목록이 비어 있을 수 있다. 그래서 MONITOR 시작과 매번 gvskb 호출이 더 중요하다.
+
+## 6-2. 판정 신선도 비대칭 규칙
 
 통과 방향과 차단 방향은 freshness를 다르게 적용한다.
 
@@ -115,7 +213,7 @@ MONITOR는 도입 초기 관찰 모드, WARN은 운영 기본값 후보, ENFORCE
 | 통과/허용 | 재호출 필요 | 통과시키지 않고 `unknown`/`error` 모드 규칙 적용 |
 | 차단/불허 | 가능하면 재호출 | 오래된 차단 유지, `stale` 표기 |
 
-즉, 느슨해지는 방향에는 최신 근거를 요구하고, 엄격해지는 방향에는 최신 근거가 없어도 기존 차단을 유지한다. 특히 오래된 `registry_rejected`는 fresh한 비거절 판정이 나오기 전까지 계속 차단한다.
+즉, 느슨해지는 방향에는 최신 근거를 요구하고, 엄격해지는 방향에는 최신 근거가 없어도 기존 차단을 유지한다. 통과 방향 freshness 기준값은 기본 1시간이다. 특히 오래된 `registry_rejected`는 fresh한 비거절 판정이 나오기 전까지 계속 차단한다.
 
 ## 7. 조건부 승인과 무결성
 
@@ -133,18 +231,21 @@ MONITOR는 도입 초기 관찰 모드, WARN은 운영 기본값 후보, ENFORCE
 
 조건을 강제할 수 없으면 `needs-review` 또는 `block`으로 처리한다. 이름과 버전은 같은데 hash가 다르면 WARN/ENFORCE에서는 차단하고 담당자 검토로 보낸다.
 
-## 8. 사용자에게 보여줄 차단 메시지
+## 8. 사용자에게 보여줄 메시지
 
-차단은 “안 됩니다”로 끝나면 안 된다. 반드시 아래를 함께 보여준다.
+필드가 늘어도 사용자 화면은 복잡해지면 안 된다. 공무원 사용자는 보안 필드를 읽으러 온 것이 아니라 코드를 만들러 온 것이다.
 
-- 차단된 패키지 또는 행동
-- checker verdict, severity, 핵심 증거
-- 적용된 mode와 env_grade
-- 권장 대체 패키지 또는 표준 라이브러리 구현
-- 안전 버전이 있으면 해당 버전
-- cooldown이면 남은 대기일
-- 대체가 불가능하면 패키지 검토요청서 또는 예외신청서 경로
-- 기능 영향과 남는 위험
+| 상황 | 사용자 화면 |
+|---|---|
+| 통과 | 아무 말도 하지 않음 |
+| 차단 | 한 줄로 “무엇을 할 수 없고 무엇을 하면 되는지”만 제시 |
+| 시스템 문제(레지스트리 도달 실패, 인텔/KEV 캐시 없음 등) | 일반 사용자에게 내부 필드명을 보여주지 않고 담당자/보고서 경로에 기록 |
+| 판정 불가(`unknown`, `item_failed`) | 사용자에게 해석을 묻지 않고 mode에 따라 조용히 통과/경고/차단 |
+| 우회 | 기관 정책이 허용할 때만 짧은 선택지로 제시 |
+
+사용자에게 `kev_checked=false`, `intel_cache.state=missing`, `registry_status=item_failed`, `source_scope=installed` 같은 필드명을 노출하지 않는다. 이 정보는 `_workspace/vibecode-manifest.json`, 보안점검보고서, 담당자용 로그에 남긴다.
+
+차단은 “안 됩니다”로 끝나면 안 된다. 사용자에게는 예를 들어 “이 패키지는 지금 확인할 수 없어 설치를 보류했습니다. 다른 승인 패키지를 쓰거나 담당자 검토를 요청하세요.”처럼 조치 중심으로 말한다.
 
 ## 9. 감사 메타데이터
 
@@ -157,6 +258,28 @@ MONITOR는 도입 초기 관찰 모드, WARN은 운영 기본값 후보, ENFORCE
 - `env_grade`
 - `track`
 - `requested_package`
+
+우회가 기관 정책상 허용되는 경우에는 자유문자 대신 구조화된 `override`를 남긴다.
+
+```json
+{
+  "override": {
+    "reason_code": "SECURITY_REVIEW_TICKET_OPENED",
+    "approval_ref": "보안-2026-0173",
+    "mode": "ENFORCE"
+  }
+}
+```
+
+`approval_ref`는 문서번호나 티켓번호여야 하며 사람 이름, 이메일, 사번을 넣지 않는다. `reason_code` 목록은 기관/레지스트리/체커 3자 합의에 맞춰 제한한다.
+
+현재 사전 승인 reason_code는 다음 3종이다.
+
+- `DEV_ONLY_NO_RUNTIME_USE`
+- `OFFLINE_EVIDENCE_PENDING`
+- `SECURITY_REVIEW_TICKET_OPENED`
+
+허용목록 밖 reason_code는 우회 사실을 잃지 않기 위해 기록하되 경고 로그로 남긴다. 그러나 `approval_ref`에 이메일, IP, 개인 이름, 사번 등 개인식별자가 있으면 기록 자체를 거부한다.
 
 다음은 보내지 않는다.
 

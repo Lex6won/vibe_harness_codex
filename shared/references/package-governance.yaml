@@ -178,13 +178,17 @@ required_evidence:
   - checker_verdict
   - verdict_severity
   - checked
+  - kev_checked
   - requires_review
+  - version_exact
+  - source_scope
   - vulnerability_summary
   - malicious_package_signal
   - kev_signal
   - cooldown_summary
   - registry_status
   - registry_decision
+  - registry_stale
   - intel_cache_state
   - license_summary
   - maintainer_or_popularity_signal
@@ -220,40 +224,85 @@ future_platform_integration:
     - "developer personal identity"
 
 catalog_export:
-  purpose: "Provide initial registry seed data without making absence from the catalog an automatic block."
+  purpose: "Provide registry seed data without converting name-only allowed packages into version-level approvals."
   approved_source: "shared/references/approved-packages.yaml"
   denied_source: "shared/references/package-denylist.yaml"
   export_status_mapping:
-    approved_source_entries: APPROVED
+    approved_source_entries: "scope_catalog only; do not import as APPROVED without exact version and checker evidence"
+    restricted_source_entries: "scope_catalog with conditions; do not import as CONDITIONAL without enforceable condition and exact version"
     denied_source_entries: REJECTED
-    mixed_catalog_entries: "must carry explicit status per entry"
-  approval_basis_for_bulk_allowlist: "BASELINE_BULK"
+    denied_patterns: "not a registry package decision; keep in harness gate/pattern checks"
+    mixed_catalog_entries: "must carry explicit status/scope per entry"
+  approval_basis_for_bulk_allowlist: "not used for name-only package entries"
+  version_rule: "Registry APPROVED is a version-level decision keyed by ecosystem, name, and version. Name-only approved catalog entries define allowed scope, not safety."
+  auto_approval_path: "approved name scope + checker checked_clean for exact version + registry auto-approval rules can create version-level APPROVED."
   absence_rule: "A package absent from the local catalog is unknown, not automatically denied."
+  registry_response_2026_08_03:
+    - "Denied package names may be imported as REJECTED because that is conservative for all versions."
+    - "Approved package names must not be imported as APPROVED because that would approve all versions."
+    - "Restricted package names need enforceable conditions before registry conditional decisions can be created."
 
 unknown_coverage_transition:
   recommended_denominator: "direct_dependencies_only"
+  direct_dependency_source_scopes:
+    - single
+    - manifest
+  transitive_or_observed_source_scopes:
+    - lockfile
+    - installed
   recommended_enforce_criteria:
     - "direct dependency unknown ratio <= institution-approved threshold"
-    - "or top-used package baseline count reached"
+    - "and version-level registered/approved baseline count reached"
+    - "and the condition only triggers human/security review for ENFORCE, not automatic mode transition"
   starter_values_for_security_team_decision:
     direct_dependency_unknown_ratio: "10%"
-    top_used_package_baseline_count: 300
+    version_level_registered_count: 200
+    observation_period: "3 consecutive weeks"
+    transition_action: "review-not-auto-switch"
 
 bypass_governance:
   principle: "Bypass is a recorded exception path, not silent disabling of the harness."
-  never_bypass:
+  default_never_bypass:
     - malicious
     - registry_rejected
     - not_found
     - in_kev
-  reason_codes:
+    - local_catalog_denied
+  pending_checker_proposal:
+    - "gvskb proposes a structured override path for not_found when the package is private/internal and absent from public PyPI/npm by design."
+    - "Registry response 2026-08-03 accepts the harness position that absolute blocks and catalog denied are not bypassable by code. Until a later three-party change, route private not_found cases to reviewer/internal-prefix policy instead of install."
+  structured_override:
+    shape:
+      reason_code: "approved enum value"
+      approval_ref: "document or ticket number, not a person name"
+      mode: "MONITOR/WARN/ENFORCE"
+      expires_at: "default 7 days if institution enables override expiry"
+    no_free_text_primary_reason: true
+  preapproved_reason_codes:
     - DEV_ONLY_NO_RUNTIME_USE
     - OFFLINE_EVIDENCE_PENDING
-    - APPROVED_INTERNAL_MIRROR_PENDING_SYNC
-    - LEGACY_COMPAT_TEMPORARY
     - SECURITY_REVIEW_TICKET_OPENED
-    - REPLACEMENT_NOT_FUNCTIONALLY_AVAILABLE
+  unrecognized_reason_code_handling: "Record with warning for audit continuity; do not drop the override record merely because the code is new."
+  approval_ref_validation: "Reject email, IP address, person name, employee id, or other personal identifiers. Use document/ticket references only."
   reporting: "Report bypass counts monthly by reason code, package ecosystem, maturity level, and env_grade."
+
+checker_signal_handling:
+  kev_checked:
+    - "Do not treat in_kev=false as no known exploitation unless kev_checked=true."
+    - "kev_checked=false is degraded evidence; route to internal report and enforce according to mode."
+    - "If kev_checked is absent, fall back only to cache_sources_used containing cisa-kev. Other cache sources such as osv-malicious do not prove KEV comparison."
+  version_exact:
+    - "Do not block solely on vulnerability evidence from version_exact=false."
+    - "Use version_exact=false to request pinning, lockfile, exact installed-version check, or review."
+  registry_status:
+    ok: "Institution decision was available."
+    non_ok: "unreachable, rejected, item_failed, unauthorized, disabled, and unknown future values mean no usable institution allow decision."
+  registry_stale:
+    - "Old blocks remain blocks."
+    - "Use stale notation in internal records; ordinary user UI should stay action-oriented."
+  source_scope:
+    single_or_manifest: "direct dependency; unknown can block in ENFORCE."
+    lockfile_or_installed: "transitive/observed dependency; unknown alone does not block in ENFORCE."
 
 checker_limitations:
   - "Dependency scanning can find known vulnerabilities, registry policy results, cooldown issues, not_found packages, and some malicious/typosquat signals, but cannot prove a package is safe."

@@ -30,7 +30,7 @@
 4. 골든 템플릿 안에서만 구현해 기술스택이 임의로 흐르지 않게 한다.
 5. 위험한 패키지·플러그인·외부서비스가 막히더라도 승인된 대체 패키지나 대체 구현 경로를 제시한다.
 6. 개발 중에는 가볍게, 배포·이관 시에는 엄격하게 산출물을 만든다.
-7. 운영팀·보안팀이 이어받을 수 있도록 PRD, DB정의서, 개발스택, 보안점검, 배포가이드, 신청서를 남긴다.
+7. 운영팀·보안팀이 이어받을 수 있도록 필요한 최소 증적을 남긴다. 배포 전 기본 제출은 체커 HTML/JSON 리포트 2종이며, 배포가이드와 신청서는 조건부다.
 
 즉, 이 하네스는 **공무원 친화적인 업무 구상 경험**과 **공공 운영에 필요한 절차·증거 체인**을 동시에 만족시키기 위한 실행 구조입니다.
 
@@ -155,7 +155,7 @@ Claude Code 호환 진입점은 다음입니다.
 → 골든 템플릿 선택
 → 구현
 → quick/standard/full 보안검증
-→ 배포·이관 산출물 생성
+→ 배포 전 체커 최종 리포트 2종 생성·제출 안내
 ```
 
 L1 시제품은 빠른 결과물을 위해 축약 흐름을 사용합니다.
@@ -214,6 +214,13 @@ Codex 또는 Claude Code 등에서 다음처럼 요청합니다.
 ```text
 이제 이 프로그램을 공식 개발환경으로 넘기고 보안성검토 신청 자료를 만들고 싶어.
 ```
+
+배포 전 기본 제출자료는 하네스가 새로 쓰는 여러 신청서가 아니라 `vibecode-checker`가 저장한 최종 리포트 2종입니다.
+
+- 사람용 HTML 리포트: `.check-reports/YYYY-MM-DD_HHMM_보안점검.html`
+- 증적용 JSON 리포트: `.check-reports/YYYY-MM-DD_HHMM_보안점검.json`
+
+하네스는 이 두 파일을 보안팀 또는 AX 전담팀에 제출해야 한다고 안내합니다. 이 리포트는 공식 승인서가 아니라 보안 검토 요청 증적입니다. 배포신청서, 예외신청서, 패키지 검토요청서, 서버설치 가이드는 기관 양식이나 미해결 예외가 있을 때만 조건부로 만듭니다.
 
 ### 3. 기관 프로파일 수정
 
@@ -295,7 +302,7 @@ _workspace/
 └── vibecode-manifest.json           # 작업 모드, 성숙도, Track, 산출물 상태
 ```
 
-L2 내부도구 또는 L3 배포·이관 준비로 승격하면 다음 산출물이 추가됩니다.
+L2 내부도구로 승격하면 필요한 범위에서 다음 산출물이 추가됩니다. L3 배포 전 기본 제출물은 체커 최종 리포트 2종이며, 아래 문서들은 조건부입니다.
 
 ```text
 _workspace/
@@ -303,12 +310,14 @@ _workspace/
 ├── 02_화면_기능설계서.md
 ├── 03_DB_테이블정의서.md
 ├── 04_개발스택_운영환경.md
-├── 05_보안점검보고서.md
-├── 06_MCP_검증결과.md
-├── 07_서버설치_배포가이드.md
-├── 08_배포신청서.md
-├── 09_예외신청서.md
-└── 10_패키지예외신청서.md
+├── 05_보안점검보고서.md              # standard 점검 요약, 필요 시
+├── source/.check-reports/
+│   ├── YYYY-MM-DD_HHMM_보안점검.html # L3 기본 제출 1
+│   └── YYYY-MM-DD_HHMM_보안점검.json # L3 기본 제출 2
+├── 07_서버설치_배포가이드.md         # 운영팀 설치 인계 필요 시
+├── 08_배포신청서.md                  # 기관 양식 요구 시
+├── 09_예외신청서.md                  # 예외 승인 필요 시
+└── 10_패키지예외신청서.md            # 패키지 예외 필요 시
 ```
 
 예상 `vibecode-manifest.json` 일부:
@@ -340,7 +349,7 @@ _workspace/
 | L0 | 아이디어 구체화 | 화면·기능·입력·출력을 정리 | 문서 점검 |
 | L1 | 시제품 | 내부 데모, 더미 데이터, 제한 사용 | quick |
 | L2 | 내부도구 | 부서/기관 내 실제 업무 보조 | standard |
-| L3 | 정식 서비스 후보 | 배포·공식 개발환경 이관 준비 | full MCP |
+| L3 | 정식 서비스 후보 | 배포·공식 개발환경 이관 준비, 보안팀/AX 전담팀 제출 | full MCP + 최종 리포트 2종 |
 | L4 | 정식 운영 | 승인된 운영환경 운영 | 하네스 단독 판정 금지 |
 
 L1은 `shared/references/thin-l1-policy.md`에 따라 문서와 에이전트 홉을 줄입니다. 시민 접근, 개인정보, 외부통신, 파일업로드, 지속 저장 DB가 있으면 L2/L3 흐름으로 승격합니다.
@@ -364,8 +373,8 @@ L1은 `shared/references/thin-l1-policy.md`에 따라 문서와 에이전트 홉
 | `security-checker` | vibecode-checker MCP/CLI 검증 게이트 |
 | `qa-operator` | 실행성, health, smoke test 확인 |
 | `release-packager` | 배포·이관 준비 상태 점검 |
-| `deploy-doc-writer` | 서버설치·배포가이드 작성 |
-| `submit-packager` | 배포신청서·예외신청서 작성 |
+| `deploy-doc-writer` | 운영팀 설치 인계가 필요할 때 서버설치·배포가이드 작성 |
+| `submit-packager` | 체커 최종 리포트 2종 제출 안내, 조건부 신청서·예외신청서 작성 |
 | `pilot-evaluator` | 파일럿 효과 평가 |
 
 ## Skill System
@@ -468,7 +477,16 @@ shared/references/package-governance.yaml
 
 기존 패키지에 대한 타이포스쿼팅 신호는 휴리스틱이므로 하네스에서는 차단하지 않고 경고합니다. 레지스트리는 같은 신호를 근거로 자동 승인을 보류하고 `UNDER_REVIEW`로 보낼 수 있습니다.
 
-레지스트리 실데이터가 적거나 0건인 초기 도입 시에는 기본 mode를 `MONITOR`로 둡니다. 권장안은 MONITOR 2주 관찰 후 보안·운영 확인을 거쳐 `WARN`으로 전환하는 것입니다. `ENFORCE`는 직접 의존성 기준 unknown 비율 또는 상위 패키지 등록량 같은 커버리지 기준이 충족된 뒤 적용합니다.
+레지스트리 실데이터가 적거나 0건인 초기 도입 시에는 기본 mode를 `MONITOR`로 둡니다. 권장안은 MONITOR 2주 관찰 후 보안·운영 확인을 거쳐 `WARN`으로 전환하는 것입니다. `ENFORCE`는 직접 의존성 기준 unknown 10% 이하와 버전 단위 등록 200건을 모두 3주 연속 충족한 뒤, 자동 전환이 아니라 보안·운영 검토를 거쳐 적용합니다.
+
+gvskb의 2026-08-03 신호 변경도 반영합니다.
+
+- `kev_checked=false`이면 `in_kev=false`를 “실제 악용 없음”으로 해석하지 않습니다.
+- `version_exact=false`인 취약점 판정만으로는 설치를 막지 않고, 정확한 설치본 확인이나 버전 고정을 요구합니다.
+- `source_scope=single/manifest`는 직접 의존성, `lockfile/installed`는 전이·관측 의존성으로 봅니다. ENFORCE에서 `unknown` 차단은 직접 의존성에만 적용합니다.
+- `registry_status`는 `ok`일 때만 기관 판정이 있는 것으로 봅니다. 그 외 값과 새로 추가된 알 수 없는 값은 허용 근거가 아닙니다.
+
+사용자 화면은 단순하게 유지합니다. 통과는 조용히 지나가고, 차단은 한 줄로 “무엇을 하지 못하고 무엇을 하면 되는지”만 보여줍니다. `kev_checked`, `source_scope`, 캐시 상태 같은 상세 필드는 담당자용 보고서와 manifest에 기록합니다.
 
 MCP 검사 결과가 깨끗하더라도 안전 증명이나 공식 승인으로 기록하지 않습니다. 담당자, 레지스트리 서비스, 또는 향후 플랫폼이 최종적으로 `approved`, `restricted`, `denied`를 결정합니다.
 
@@ -535,7 +553,7 @@ node .\shared\scripts\checker-bootstrap.mjs --target .\tools\vibecode-checker --
 node .\shared\scripts\package-catalog-export.mjs --root . --out .\generated\package-catalog.export.json
 ```
 
-이 export에서 승인목록은 `APPROVED` 또는 `CONDITIONAL`, 차단목록은 `REJECTED`로 나갑니다. 카탈로그에 없는 패키지는 차단이 아니라 `UNKNOWN`입니다.
+이 export에서 버전 없는 승인/제한 이름은 레지스트리 `APPROVED`로 반입하지 않고 `scope_catalog`로만 나갑니다. 차단 패키지 이름만 `REJECTED` 반입 대상입니다. 레지스트리의 `APPROVED`는 `(생태계, 이름, 버전)` 단위 판정이므로, 이름만 있는 카탈로그 항목을 모든 버전 승인으로 격상하지 않습니다. 카탈로그에 없는 패키지는 차단이 아니라 `UNKNOWN`입니다.
 
 ## Validation
 

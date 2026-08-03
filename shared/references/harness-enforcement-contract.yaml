@@ -61,6 +61,9 @@ checker_call_contract:
     - "For package decisions, call vibecode-checker/gvskb; do not call registry directly."
     - "Use scan_dependencies for manifest/lockfile decisions and package-oriented gates."
     - "Use scan_path for source security checks."
+    - "Use scan_installed_packages in full release checks when .venv, node_modules, wheels, or installed inventories exist."
+    - "Use scan_vendor_bundles in full release checks when scan_path returns vendor_bundles."
+    - "Use render_report(format='both', save=true) for release readiness and preserve the checker-saved paths."
     - "Use checker verdict fields as the enforcement input."
   audit_metadata_to_send_when_supported:
     caller: "harness:auto"
@@ -80,10 +83,14 @@ required_checker_fields:
     - checked
     - is_malicious_package
     - in_kev
+    - kev_checked
     - max_cve
     - cooldown.ok
+    - version_exact
+    - source_scope
     - registry_status
     - registry_decision
+    - registry_stale
     - heuristics.typosquat_warning
   manifest_level:
     - truncated_count
@@ -113,6 +120,51 @@ absolute_block:
   notes:
     not_found: "Official registry absence is not a heuristic. Treat it as a likely hallucinated or slopsquatting-prone package name and block before install."
     stale_rejected_cache: "If a cached registry rejection is stale or registry is unreachable, keep blocking. Show that the rejection is stale/current registry confirmation failed; do not downgrade to warning."
+    kev_checked: "If kev_checked == false, in_kev == false does not mean no known exploitation; it means KEV comparison was not performed."
+
+checker_signal_updates_2026_08_03:
+  kev_checked:
+    meaning: "Whether KEV comparison actually ran for this package result."
+    enforcement:
+      - "If in_kev == true, always block."
+      - "If kev_checked == false and in_kev == false, do not use in_kev=false as pass evidence."
+      - "If kev_checked is absent, treat cisa-kev in cache_sources_used as the only fallback proof that KEV comparison ran; other cache sources such as osv-malicious do not prove KEV comparison."
+      - "In ENFORCE, hold or block install when KEV comparison is unavailable unless another fresh safe verdict and institution policy explicitly allow."
+      - "In MONITOR/WARN, record the degraded evidence path for staff, but do not show cache/source internals to the ordinary user."
+  version_exact:
+    meaning: "Whether the checked version is an observed exact version rather than a manifest boundary assumption such as >=2.28."
+    enforcement:
+      - "version_exact == false cannot be the only reason to block installation."
+      - "Boundary-version vulnerability evidence may warn or require review, but should not create a standalone block."
+      - "Absolute package-name/package-identity rules such as malicious, not_found, registry_rejected, and in_kev still apply regardless of version_exact."
+  source_scope:
+    allowed_values:
+      - single
+      - manifest
+      - lockfile
+      - installed
+    enforcement:
+      - "single and manifest are direct human-selected dependencies."
+      - "lockfile and installed are transitive or observed dependencies unless the checker marks them as direct."
+      - "In ENFORCE, unknown blocks only for source_scope single or manifest."
+      - "In ENFORCE, unknown on lockfile or installed is recorded/reported but not blocked by unknown alone; absolute rules still block."
+  registry_stale:
+    meaning: "The checker is returning an old registry block or degraded registry result."
+    enforcement:
+      - "registry_stale == true does not change a block into a warning."
+      - "Use registry_stale for staff audit/detail, not ordinary user-facing field display."
+  registry_status:
+    allowed_values:
+      - ok
+      - unreachable
+      - rejected
+      - item_failed
+      - unauthorized
+      - disabled
+    enforcement:
+      - "Only registry_status == ok means an institution registry decision was available."
+      - "Any registry_status other than ok is treated as no institution decision for allow purposes."
+      - "Do not enumerate unknown future registry_status values as pass; unknown values must be treated as no institution decision."
 
 enforcement_modes:
   default_mode: MONITOR
@@ -131,6 +183,44 @@ enforcement_modes:
     ENFORCE:
       meaning: "Fail safe on unknown/error/cooldown and block medium+ dependency risk."
       recommended_for: "Registry/checker coverage is operationally reliable."
+  enforce_transition_criteria:
+    initial_values:
+      direct_dependency_unknown_ratio: "10% or less"
+      version_level_registered_count: 200
+      observation_period: "3 consecutive weeks"
+    rule: "All criteria must be met, then security/operations reviews the transition. Do not switch to ENFORCE automatically."
+    denominator: "direct dependencies only: source_scope single or manifest"
+
+checker_effort_profiles:
+  quick:
+    purpose: "During coding, catch essential safety rails without slowing the user or spending unnecessary tokens."
+    trigger: "Risky code/dependency changes or explicit user request such as pre-commit/midpoint check."
+    scope: "Changed files, requested snippet/path, and changed dependency manifests only."
+    must_check:
+      - "new package, denied/not_found/registry_rejected/malicious/in_kev dependencies"
+      - "hardcoded secrets and personal/sensitive sample data"
+      - "external API/CDN/LLM/MCP additions outside policy"
+      - "SQL injection, file upload risk, eval/command execution, unsafe deserialization"
+      - "language, DBMS, runtime, or server-profile drift from institution policy"
+    user_message: "Silent pass; one short action-oriented line for block/warn."
+  standard:
+    purpose: "After implementation completion, validate full source and declared dependencies before release readiness."
+    required: "scan_path on source plus scan_dependencies for manifest/lockfile evidence."
+    blocks: "unresolved critical/high/block findings, missing dependency evidence for L2+, or scanned_file_count == 0."
+  full:
+    purpose: "Before deployment/security/AX submission, create final checker evidence and the default two-report submission."
+    required_tools:
+      - scan_path
+      - scan_dependencies
+      - scan_installed_packages_when_inventory_exists
+      - scan_vendor_bundles_when_vendor_bundles_exist
+      - render_report_both_save_true
+    merge_rule: "Merge dependency, installed-package, and vendor-bundle audits into dependency_audit before rendering."
+    default_final_submission:
+      - "vibecode-checker saved HTML report"
+      - "vibecode-checker saved JSON evidence report"
+    user_notice_required: "The user must be told to submit the two final reports to the security team or AX team. The reports are evidence for review, not official approval."
+    no_extra_documents_by_default: true
 
 mode_decision_table:
   vulnerable_critical_or_high:
@@ -154,9 +244,20 @@ mode_decision_table:
     WARN: warn
     ENFORCE: warn
   unknown_or_error:
+    condition: "source_scope missing or tool-level failure where direct/transitive scope cannot be determined"
     MONITOR: log
     WARN: warn
     ENFORCE: block
+  unknown_direct_dependency:
+    condition: "verdict unknown/error with source_scope single or manifest"
+    MONITOR: log
+    WARN: warn
+    ENFORCE: block
+  unknown_transitive_or_installed:
+    condition: "verdict unknown with source_scope lockfile or installed"
+    MONITOR: log
+    WARN: warn
+    ENFORCE: warn
   registry_approved_checked_true:
     MONITOR: pass
     WARN: pass
@@ -215,10 +316,14 @@ local_catalog_and_registry_priority:
   catalog_export_for_registry:
     approved_packages_file: "shared/references/approved-packages.yaml"
     denied_packages_file: "shared/references/package-denylist.yaml"
-    export_rule: "When sharing a package catalog with the registry, mark allowlist entries as APPROVED and denylist entries as REJECTED; mixed catalogs must carry an explicit status field per package."
+    export_rule: "When sharing a package catalog with the registry, denylist package names become REJECTED, but name-only approved/restricted entries are scope hints and must not become registry APPROVED without an exact version and checker evidence."
+    reason: "Registry APPROVED is a version-level decision. Importing name-only allowlist entries as APPROVED would approve every version of that package."
+    denied_patterns: "Pattern rules such as CDN/eval/postinstall stay in the harness gate; they are not registry package decisions."
+    restricted_conditions: "Restricted names need enforceable conditions before registry conditional decisions can be created."
 
 freshness_policy:
   asymmetric_rule: "Require fresh evidence before becoming less strict; do not require fresh evidence to remain strict."
+  pass_freshness_target: "1 hour for pass/allow decisions unless institution policy changes it after operations data."
   allow_or_pass_decision:
     stale_or_expired: "Retry checker/registry lookup before pass."
     retry_failed: "Do not pass; treat as unknown/error according to mode."
@@ -246,16 +351,25 @@ bypass_policy:
     - "registry_rejected"
     - "not_found"
     - "in_kev"
+    - "local catalog denied package"
   reason_code_required: true
   free_text_reason: "not allowed as the primary reason; optional detail must not contain personal data"
   monthly_report_required: true
-  starter_reason_codes:
+  preapproved_reason_codes:
     - "DEV_ONLY_NO_RUNTIME_USE"
     - "OFFLINE_EVIDENCE_PENDING"
-    - "APPROVED_INTERNAL_MIRROR_PENDING_SYNC"
-    - "LEGACY_COMPAT_TEMPORARY"
     - "SECURITY_REVIEW_TICKET_OPENED"
-    - "REPLACEMENT_NOT_FUNCTIONALLY_AVAILABLE"
+  unrecognized_reason_code_handling: "Keep the override record with a warning audit log rather than dropping the fact that a bypass occurred."
+  approval_ref_validation: "Reject approval_ref values that contain email, IP address, person name, employee id, or other personal identifiers."
+  structured_override_shape:
+    reason_code: "one of the approved reason codes; no free text as the primary value"
+    approval_ref: "document/ticket number, not a person name"
+    mode: "MONITOR/WARN/ENFORCE"
+    expires_at: "default 7 days when institution enables overrides"
+  pending_3_party_policy:
+    - "gvskb proposes that not_found may be overridden for private/internal registry packages with structured override or internal package prefixes."
+    - "Registry response 2026-08-03 accepts the harness position that absolute blocks and catalog denied packages are not bypassable by code."
+    - "Until a later three-party change, the harness defaults to blocking not_found and routing private-package cases to reviewer/internal-prefix policy instead of install."
 
 conditional_approval_enforcement:
   rule: "If checker/registry returns conditions such as --ignore-scripts, pinned version, internal mirror only, no external API, or dev-only use, the harness may allow only when it can enforce and record every condition."
@@ -267,15 +381,39 @@ hash_and_integrity_policy:
   npm_install_rule: "Prefer npm ci --ignore-scripts from a lockfile for reviewed projects."
 
 block_response_contract:
-  every_block_must_show:
+  ordinary_user_message:
+    principle: "Keep the screen simple. More checker fields must not mean more user-facing complexity."
+    pass: "Show nothing."
+    block: "Show one short action sentence: what cannot be installed and what to do next."
+    system_problem: "Do not expose registry outage, cache missing, kev_checked, source_scope, or internal field names to ordinary users; route staff detail to the report/manifest."
+    unknown_or_item_failed: "Do not ask the user to interpret the checker result. Apply the active mode and record staff detail."
+    override: "The only user choice point is structured override when institution policy allows it."
+  internal_record_must_include:
     - "package or action blocked"
     - "checker verdict and key evidence"
+    - "kev_checked, version_exact, source_scope, registry_status, registry_stale when returned"
     - "applied mode and env_grade"
     - "safe replacement package, standard-library path, or approved track change"
     - "safe version if checker provides one"
     - "cooldown wait days when applicable"
     - "review or exception request path when replacement is not possible"
     - "feature impact and residual risk"
+
+release_submission_contract:
+  default_submission_materials:
+    html_report: "The human-readable HTML report saved by vibecode-checker render_report."
+    json_evidence: "The original JSON evidence saved by vibecode-checker render_report/save_report."
+  mandatory_notice: "Before deployment or handoff, tell the user the final two checker reports must be submitted to the security team or AX team."
+  official_approval_boundary: "The reports are review evidence, not official security approval or production authorization."
+  conditional_documents:
+    deployment_application: "Only when the institution requires a separate application form."
+    exception_request: "Only when unresolved policy/security exceptions exist."
+    package_review_request: "Only when package review or exception is required."
+    server_install_guide: "Only when operations needs installation handoff."
+  forbidden_default_behavior:
+    - "Do not create a separate package-evidence JSON by default when checker JSON already contains dependency_audit."
+    - "Do not rewrite checker reports into new harness report filenames."
+    - "Do not force release candidates to produce deployment applications when the two checker reports satisfy the review handoff."
 
 known_boundaries:
   - "The harness cannot stop direct terminal installs performed outside the harness."

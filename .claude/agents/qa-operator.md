@@ -33,6 +33,6 @@ tools: [Read, Write, Bash]
 - 필요 시 `_workspace/00_handoff.md`
 
 ## 핸드오프
-- 실행성 확인 완료: `status=pass`, 신규 개발은 `to_agent=deploy-doc-writer`
+- 실행성 확인 완료: `status=pass`, 신규 개발은 작업현황 갱신 후 종료한다. 운영팀 설치 인계나 기관 양식이 필요한 경우에만 `to_agent=deploy-doc-writer`
 - 실행성 문제: `status=block`, `to_agent=gg-platform-coder` 또는 `change-coder`
 - 배포·이관 누락 발견: `status=warn` 또는 `block`, `to_agent=release-packager`

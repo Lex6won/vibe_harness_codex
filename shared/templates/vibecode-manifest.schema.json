@@ -39,7 +39,13 @@
         "registry_status": {"type": "object"},
         "unchecked_count": {"type": "integer", "minimum": 0},
         "truncated_count": {"type": "integer", "minimum": 0},
-        "intel_cache_state": {"type": "string"}
+        "intel_cache_state": {"type": "string"},
+        "kev_checked": {"type": "boolean"},
+        "version_exact": {"type": "boolean"},
+        "source_scope_summary": {"type": "object"},
+        "registry_stale": {"type": "boolean"},
+        "pass_freshness_target": {"type": "string"},
+        "ordinary_user_message_policy": {"enum": ["silent-pass-one-line-block", "unknown"]}
       }
     },
     "plugins": {"type": "object"},
@@ -55,13 +61,60 @@
         "checker_verdicts": {"type": "array"},
         "replacements": {"type": "array"},
         "mode_decisions": {"type": "array"},
+        "source_scope_counts": {"type": "object"},
+        "kev_checked_summary": {"type": "object"},
+        "version_exact_summary": {"type": "object"},
         "registry_status": {"type": "object"},
         "scan_evidence": {"type": "object"}
       }
     },
     "feature_discovery": {"type": "object"},
     "artifacts": {"type": "object"},
-    "security_check": {"type": "object"},
+    "security_check": {
+      "type": "object",
+      "properties": {
+        "profile": {"enum": ["quick", "standard", "full", "unknown"]},
+        "scanned_file_count": {"type": "integer", "minimum": 0},
+        "full_scan_required": {"type": "boolean"},
+        "full_scan_completed": {"type": "boolean"},
+        "tools_used": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "server_status",
+              "scan_path",
+              "scan_dependencies",
+              "scan_installed_packages",
+              "scan_vendor_bundles",
+              "render_report"
+            ]
+          }
+        },
+        "dependency_audit_merged": {"type": "boolean"},
+        "checker_saved_reports": {
+          "type": "object",
+          "properties": {
+            "markdown": {"type": "string"},
+            "html": {"type": "string"},
+            "json": {"type": "string"},
+            "directory": {"type": "string"}
+          }
+        },
+        "final_submission_reports": {
+          "type": "object",
+          "properties": {
+            "html_report": {"type": "string"},
+            "json_evidence": {"type": "string"},
+            "submission_required": {"type": "boolean"},
+            "submission_target": {"enum": ["security-team", "ax-team", "security-or-ax-team", "institution-defined", "unknown"]},
+            "notice_given": {"type": "boolean"},
+            "official_approval_claimed": {"type": "boolean"}
+          }
+        },
+        "conditional_documents": {"type": "array"},
+        "missing_evidence": {"type": "array"}
+      }
+    },
     "checker_bootstrap": {
       "type": "object",
       "properties": {
@@ -77,6 +130,22 @@
     },
     "pilot_metrics": {"type": "object"},
     "exceptions": {"type": "array"},
+    "overrides": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "target": {"type": "string"},
+          "verdict": {"type": "string"},
+          "registry_status": {"type": "string"},
+          "reason_code": {"type": "string"},
+          "approval_ref": {"type": "string"},
+          "mode": {"enum": ["MONITOR", "WARN", "ENFORCE"]},
+          "expires_at": {"type": "string"},
+          "created_at": {"type": "string"}
+        }
+      }
+    },
     "gates": {"type": "object"}
   }
 }

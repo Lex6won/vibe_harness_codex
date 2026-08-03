@@ -48,7 +48,7 @@ AI 도구가 공통으로 읽을 선언 파일은 `shared/harness.yaml`이다. �
 |---|---|---:|---|
 | 신규 설계·구현 | “이런 프로그램 만들고 싶다” | 높음 | PRD, 화면/기능, 테이블, 개발스택, 소스, 기초 보안점검 |
 | 기존 코드 수정 | “이 기능만 고쳐줘/추가해줘” | 낮음 | 변경요약, 수정 소스, 영향받은 산출물 갱신, 빠른 보안점검 |
-| 배포·이관 준비 | “배포신청/공식환경 이전/보안성검토 준비” | 높음 | 보안점검보고서, MCP 결과, 서버설치 가이드, 배포신청서, 예외신청서 |
+| 배포·이관 준비 | “배포신청/공식환경 이전/보안성검토 준비” | 높음 | 체커 최종 리포트 2종(HTML + JSON), 조건부 추가 양식 |
 | 파일럿 평가 | “실증 결과를 평가해줘” | 중간 | 파일럿 평가표, 하네스 개선사항 |
 
 ## 팀 파이프라인
@@ -65,7 +65,7 @@ intake-guide
   → data-modeler
   → template-engineer
   → gg-platform-coder
-  → security-checker ─(ok/warn)→ qa-operator → deploy-doc-writer(초안) → submit-packager(요청 시)
+  → security-checker ─(ok/warn)→ qa-operator → deploy-doc-writer(운영 인계 필요 시) → submit-packager(요청 시)
                       └(block)→ gg-platform-coder 재작업 최대 2회
 ```
 
@@ -87,8 +87,8 @@ intake-guide
   → stage-advisor(L3 후보 확인)
   → release-packager
   → security-checker(full, gvskb MCP)
-  → deploy-doc-writer
   → submit-packager
+  → deploy-doc-writer(운영 인계/기관 양식 필요 시)
 ```
 
 파일럿 평가는 별도 평가 흐름을 사용한다.
@@ -145,11 +145,13 @@ stage-advisor
 | `_workspace/04_개발스택_운영환경.md` | platform-architect, gg-platform-coder |
 | `_workspace/source/` | template-engineer, gg-platform-coder, change-coder |
 | `_workspace/05_보안점검보고서.md` | security-checker |
-| `_workspace/06_MCP_검증결과.md` | security-checker |
-| `_workspace/07_서버설치_배포가이드.md` | deploy-doc-writer |
-| `_workspace/08_배포신청서.md` | submit-packager |
-| `_workspace/09_예외신청서.md` | submit-packager |
-| `_workspace/10_패키지예외신청서.md` | submit-packager |
+| `_workspace/06_MCP_검증결과.md` | security-checker, 필요 시 |
+| `source/.check-reports/*_보안점검.html` | security-checker full, L3 기본 제출 |
+| `source/.check-reports/*_보안점검.json` | security-checker full, L3 기본 제출 |
+| `_workspace/07_서버설치_배포가이드.md` | deploy-doc-writer, 운영 인계 필요 시 |
+| `_workspace/08_배포신청서.md` | submit-packager, 기관 양식 요구 시 |
+| `_workspace/09_예외신청서.md` | submit-packager, 예외 필요 시 |
+| `_workspace/10_패키지예외신청서.md` | submit-packager, 패키지 예외 필요 시 |
 | `_workspace/11_파일럿평가.md` | pilot-evaluator |
 | `_workspace/vibecode-manifest.json` | 모든 에이전트 |
 
@@ -202,6 +204,6 @@ stage-advisor
 
 ## 완료 판단
 
-개발 완료와 배포 준비는 다르다. 개발 중에는 PRD, 테이블, 개발스택, 소스, 간단 보안점검까지만 완료로 볼 수 있다. 배포 또는 공식 개발환경 이관 요청이 있을 때만 MCP 최종 결과, 서버설치 가이드, 보안성검토/배포신청 산출물을 확정한다. 정식 운영 승인 여부는 하네스가 단독 판정하지 않는다.
+개발 완료와 배포 준비는 다르다. 개발 중에는 PRD, 테이블, 개발스택, 소스, 간단 보안점검까지만 완료로 볼 수 있다. 배포 또는 공식 개발환경 이관 요청이 있을 때는 MCP full 점검을 실행하고, 체커가 저장한 HTML 리포트와 JSON 증적 2종을 최종 제출 기본자료로 확정한다. 하네스는 이 두 파일을 보안팀 또는 AX 전담팀에 제출해야 한다고 안내한다. 서버설치 가이드, 배포신청서, 예외신청서, 패키지 검토요청서는 기관 양식이나 미해결 예외가 있을 때만 조건부로 만든다. 정식 운영 승인 여부는 하네스가 단독 판정하지 않는다.
 
 
