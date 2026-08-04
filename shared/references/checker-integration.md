@@ -45,6 +45,13 @@ quick에서 반드시 보는 안전장치는 아래로 제한한다.
 
 단순 UI 문구, 문서, 스타일 수정에는 자동 full scan을 하지 않는다.
 
+새 패키지 설치는 quick의 가장 작은 실행 단위다. 하네스는 새 패키지를 먼저 설치한 뒤 나중에 검사하지 않는다.
+
+- Python/PyPI: `shared/enforcement/gvskb_gate.py check/install`
+- JavaScript/npm: `shared/enforcement/gvskb_gate.js check/install`
+- npm 설치는 기본적으로 `--ignore-scripts`를 붙인다.
+- `verify-manifest`는 개발 중 확인용이며, 배포 전 제출 리포트를 대신하지 않는다.
+
 ### 1-2. 체커 프로파일 적용 검증
 
 `network_profile`과 `checker profile`은 이름공간이 다르다.
@@ -317,7 +324,7 @@ MONITOR는 도입 초기 관찰 모드, WARN은 운영 기본값 후보, ENFORCE
 
 하네스도 다음을 완전히 막을 수는 없다.
 
-- 사용자가 하네스 밖 터미널에서 직접 `pip install` 또는 `npm install` 하는 행위
+- 사용자가 하네스 패키지 게이트 밖 터미널에서 직접 `pip install` 또는 `npm install` 하는 행위
 - 이미 설치된 패키지의 과거 사용
 - 하네스를 우회하는 IDE/코딩 에이전트
 - 사용자가 로컬 정책 파일을 임의 수정하는 행위

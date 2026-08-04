@@ -45,6 +45,9 @@ requireText("README.md", [
   "git clone https://github.com/Lex6won/vibe_harness_codex.git",
   "git clone https://github.com/Lex6won/vibecode-checker.git",
   "quick/standard/full",
+  "표준 운영 하네스",
+  "초보 공무원",
+  "구상 → 표준 템플릿 구현",
   "dev-quick",
   "GVSKB_POLICIES_DIR",
   "gvskb-server",
@@ -52,10 +55,14 @@ requireText("README.md", [
   "network_profile",
   "최종 리포트 2종",
   "보안팀 또는 AX 전담팀에 제출",
+  "shared/assets/coaching-messages.md",
+  "shared/enforcement/gvskb_gate.py",
+  "shared/enforcement/gvskb_gate.js",
 ]);
 
 requireText("AGENTS.md", [
   "quick during coding",
+  "standard operating harness",
   "standard after implementation completion",
   "full before deployment/security/AX submission",
   "vibecode-checker",
@@ -65,14 +72,24 @@ requireText("AGENTS.md", [
   "https://github.com/Lex6won/vibe_harness_codex",
   "https://github.com/Lex6won/vibecode-checker",
   "Python or JavaScript",
+  "coaching-messages.md",
+  "gvskb_gate.py",
+  "gvskb_gate.js",
 ]);
 
 requireText("shared/harness.yaml", [
   "canonical_repositories:",
+  "standard operating harness",
+  "agency_onboarding:",
+  "coaching-messages.md",
   "https://github.com/Lex6won/vibe_harness_codex",
   "https://github.com/Lex6won/vibecode-checker",
   "checker-mediated-only",
   "checker_profile_policy:",
+  "package_gate:",
+  "gvskb_gate.py",
+  "gvskb_gate.js",
+  "final_submission_impact",
   "quick_profile: \"dev-quick\"",
   "custom_policies_dir: \"absolute-path-only\"",
   "vibecode-checker_saved_html_report",
@@ -85,6 +102,26 @@ requireText("shared/institution-profile.yaml", [
   "- javascript",
   "canonical_repositories:",
   "registry_access: \"checker-mediated-only\"",
+]);
+
+requireText("shared/assets/coaching-messages.md", [
+  "패키지 차단",
+  "보안 점검",
+  "체커 미설치",
+  "배포 전 제출",
+  "안 됩니다",
+]);
+
+requireText("shared/references/user-experience-policy.md", [
+  "구상 → 만들기 → 확인",
+  "shared/assets/coaching-messages.md",
+  "차단은 실패가 아니라 안전한 우회로 안내",
+]);
+
+requireText("shared/references/institution-profile-guide.md", [
+  "처음 바꿀 파일",
+  "처음에는 건드리지 말 파일",
+  "shared/institution-profile.yaml",
 ]);
 
 requireText("shared/references/lifecycle-quality-gates.yaml", [
@@ -123,6 +160,28 @@ requireText("shared/references/checker-integration.md", [
   "profile_fallback",
   "network_profile",
   "검증을 완료 처리하지 않는다",
+  "gvskb_gate.py",
+  "gvskb_gate.js",
+  "--ignore-scripts",
+]);
+
+requireText("shared/enforcement/gvskb_gate.py", [
+  "check_package_impl",
+  "audit_manifest",
+  "verify-manifest",
+  "GVSKB_GATE_MODE",
+  "local_denied",
+  "registry_rejected",
+  "not_found",
+  "in_kev",
+]);
+
+requireText("shared/enforcement/gvskb_gate.js", [
+  "GVSKB_GATE_PYTHON",
+  "gvskb_gate.py",
+  "--ignore-scripts",
+  "verify-manifest",
+  "npm",
 ]);
 
 const disallowedImplementationExtensions = new Set([

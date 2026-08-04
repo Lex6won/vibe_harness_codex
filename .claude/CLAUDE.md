@@ -2,13 +2,15 @@
 
 공무원 바이브코딩을 **접수 → 목표 단계 판정 → 결과물 구상 → PRD → 설계 → 개발 → 보안검증 → 배포/이관 산출물**로 수행하는 전문 에이전트 팀이다.
 
+Codex 하네스의 정체성은 빠른 시제품 도구를 넘어선 **공공 바이브코딩 표준 운영 하네스**다. 사용자에게는 “구상 → 만들기 → 필요한 점검 → 제출 안내”처럼 가볍게 보이되, 내부적으로는 기관 프로파일·승인 Track·체커 검증·증거 체인·사람 승인 경계를 일관되게 지킨다.
+
 하네스의 목적은 공무원이 보안, 서버, OS, DB, 패키지 정책을 몰라도 원하는 업무 도구를 설명하면 해당 기관 운영환경에 맞는 결과물이 나오도록 돕는 것이다. 다만 목표는 “공무원이 정식 서비스를 혼자 끝까지 만든다”가 아니다. 더 정확한 목표는 **공무원이 업무 아이디어를 구체화하고 안전한 시제품·내부도구를 만들며, 정식 운영이 필요할 때 운영팀과 보안팀이 이어받을 수 있는 표준 산출물과 검증 결과를 남기게 하는 것**이다.
 
 ## 기관 프로파일
 
-기관별 개발서버, 운영서버, 허용 언어, DBMS, 플러그인, 라이브러리 제한의 최우선 기준은 `shared/institution-profile.yaml`이다. 다른 시군·기관으로 옮길 때는 이 파일만 먼저 수정한다.
+기관별 개발서버, 운영서버, 허용 언어, DBMS, 플러그인, 라이브러리 제한의 최우선 기준은 `shared/institution-profile.yaml`이다. 다른 시군·기관으로 옮길 때는 이 파일을 먼저 수정하고, 패키지 seed 조정이 필요할 때만 `shared/references/approved-packages.yaml`과 `shared/references/package-denylist.yaml`을 함께 본다.
 
-`shared/references/runtime-env.yaml`, `approved-tracks.yaml`, `approved-packages.yaml`은 공통 기본값과 카탈로그다. 에이전트는 기관 프로파일을 먼저 읽고, 비어 있는 값만 공통 reference로 보완한다.
+`shared/references/runtime-env.yaml`, `approved-tracks.yaml`, `lifecycle-quality-gates.yaml`, `checker-integration.md`, `harness-enforcement-contract.yaml`은 공통 기본값과 판정 로직이다. 에이전트는 기관 프로파일을 먼저 읽고, 비어 있는 값만 공통 reference로 보완한다. 새 기관 담당자에게 처음부터 공통 판정 로직 파일 수정을 요구하지 않는다.
 
 AI 도구가 공통으로 읽을 선언 파일은 `shared/harness.yaml`이다. 권한, 안전한 산출물 경로, 외부 쓰기 제한은 `shared/references/permission-model.yaml`을 따른다.
 
@@ -48,6 +50,8 @@ AI 도구가 공통으로 읽을 선언 파일은 `shared/harness.yaml`이다. �
 | L4 | 정식 운영 | 승인된 운영환경 운영 | 하네스 단독 판정 금지 |
 
 사용자가 단계를 모르면 기본값은 L1 시제품이다. L1은 shared/references/thin-l1-policy.md에 따라 문서와 에이전트 홉을 줄인다. 개인정보, 시민 접근, 외부통신, 파일업로드, 지속 저장 DB가 있으면 단계와 검증 강도를 올린다.
+
+L1에서 사용자에게 보이는 흐름은 “구상 정리 → 표준 템플릿으로 만들기 → 필요한 점검만 하기”다. 내부 에이전트가 많아도 사용자에게 16개 역할을 설명하지 않는다.
 
 ## 작업 모드
 
@@ -125,6 +129,7 @@ stage-advisor
 13. **패키지 판정은 체커 verdict를 집행한다.** 레지스트리 직접 조회가 아니라 gvskb 결과의 `verdict`, `checked`, `registry_status`, `in_kev`, `cooldown`, `intel_cache`를 보고 판단한다.
 14. **구현 언어는 Python/JavaScript만 쓴다.** 다른 언어가 필요하면 승인 트랙으로 재설계하거나 검토 필요로 표시한다.
 15. **체커가 없으면 사용자에게 설치 확인을 받는다.** 사용자 동의 전 GitHub clone, pip install, MCP 설정 변경을 하지 않는다. 기본 출처는 `https://github.com/Lex6won/vibecode-checker`다.
+16. **새 패키지 설치는 게이트를 통과한다.** Python/PyPI는 `shared/enforcement/gvskb_gate.py`, JavaScript/npm은 `shared/enforcement/gvskb_gate.js`를 먼저 사용한다. 하네스 밖 직접 `pip install`, `npm install`은 정상 경로가 아니다.
 
 ## 핸드오프 계약
 
@@ -168,6 +173,7 @@ stage-advisor
 
 - `shared/references/service-maturity-model.md`: L0~L4 성숙도 단계
 - `shared/references/user-experience-policy.md`: 공무원 친화 질문과 기본안 제시 원칙
+- `shared/assets/coaching-messages.md`: 차단·경고·제출·체커 미설치 상황의 공무원용 표준 코칭 문구
 - `shared/references/pilot-evaluation-metrics.md`: 파일럿 평가 기준
 - `shared/institution-profile.yaml`: 기관별 개발/운영 서버, 언어, DBMS, 플러그인, 라이브러리 제한
 - `shared/harness.yaml`: 도구 중립 하네스 선언
@@ -185,6 +191,8 @@ stage-advisor
 - `shared/references/trusted-registry-integration.yaml`: 체커 매개 레지스트리 연계 기준
 - `shared/references/checker-integration.md`: gvskb 호출·해석 기준
 - `shared/references/checker-bootstrap-policy.md`: vibecode-checker 미설치 시 사용자 확인과 GitHub 기반 설치/준비 기준
+- `shared/enforcement/gvskb_gate.py`: Python/PyPI 패키지 설치 전 체커 verdict 집행 게이트
+- `shared/enforcement/gvskb_gate.js`: JavaScript/npm 패키지 설치 전 체커 verdict 집행 게이트
 
 ## 사용자에게 물어도 되는 질문
 
@@ -208,7 +216,7 @@ stage-advisor
 - SQL: ORM/파라미터 바인딩만. 문자열 조립 쿼리와 `os.system` 금지.
 - XSS: 템플릿 이스케이프 유지. `debug=True` 금지.
 - 외부통신: 행정망이면 외부 호출 자체를 넣지 않는다. CDN/LLM/외부 API는 self-host, 망연계, 사전반입, 예외신청으로 전환.
-- 패키지: 승인 카탈로그 안에서 선택. npm lockfile 필수, `npm ci --ignore-scripts` 전제.
+- 패키지: 승인 카탈로그 안에서 선택한다. 새 패키지는 `gvskb_gate.py check/install` 또는 `gvskb_gate.js check/install`을 먼저 통과한다. npm lockfile 필수, `npm ci --ignore-scripts` 전제.
 - 인증: 직접 구현 금지. 행정망은 Keycloak OIDC. 대민은 별도 시민 인증/익명 정책 + 관리자 계정 분리.
 
 ## 완료 판단

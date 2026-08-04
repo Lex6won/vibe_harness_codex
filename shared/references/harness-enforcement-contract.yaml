@@ -68,6 +68,9 @@ checker_call_contract:
     mcp_json_encoding_rule: ".claude/.mcp.json must be UTF-8 without BOM and include PYTHONUTF8=1, PYTHONIOENCODING=utf-8, GVSKB_MODE=offline."
   normal_path:
     - "For package decisions, call vibecode-checker/gvskb; do not call registry directly."
+    - "For new PyPI packages, use shared/enforcement/gvskb_gate.py check/install before pip install."
+    - "For new npm packages, use shared/enforcement/gvskb_gate.js check/install before npm install; default to --ignore-scripts."
+    - "Use verify-manifest for development-time manifest checks; this is not a final release report."
     - "Use scan_dependencies for manifest/lockfile decisions and package-oriented gates."
     - "Use scan_path for source security checks."
     - "Use scan_installed_packages in full release checks when .venv, node_modules, wheels, or installed inventories exist."
@@ -426,7 +429,7 @@ release_submission_contract:
     - "Do not force release candidates to produce deployment applications when the two checker reports satisfy the review handoff."
 
 known_boundaries:
-  - "The harness cannot stop direct terminal installs performed outside the harness."
+  - "The package gate constrains the normal harness path, but cannot stop direct terminal installs performed outside the harness."
   - "The harness cannot retroactively prove already-installed packages are safe."
   - "The harness cannot control IDE/agent tools that bypass this harness."
   - "Users with filesystem access may edit local policy files; release gates must therefore re-check evidence."

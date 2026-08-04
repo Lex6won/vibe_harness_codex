@@ -1,5 +1,10 @@
 harness_version: 1
 name: "public-vibecode-harness"
+identity:
+  category: "public-sector vibe-coding standard operating harness"
+  user_facing_promise: "Beginner-friendly: idea, standard template implementation, proportional check, final report submission guidance."
+  operator_promise: "Governance-grade: institution profile, approved tracks, checker/registry verdict enforcement, evidence chain, and human approval boundary."
+  comparison_note: "Claude-style harnesses may optimize for fast local execution; Codex harness optimizes for multi-agent, multi-tool, multi-agency standardization."
 
 canonical_repositories:
   rule: "Install and update the harness and checker from the official GitHub URLs. Treat local folders as working copies, not sources of truth."
@@ -40,12 +45,39 @@ references:
   trusted_registry_integration: "shared/references/trusted-registry-integration.yaml"
   checker_integration: "shared/references/checker-integration.md"
   checker_bootstrap_policy: "shared/references/checker-bootstrap-policy.md"
+  user_experience_policy: "shared/references/user-experience-policy.md"
+  coaching_messages: "shared/assets/coaching-messages.md"
+  package_gate_python: "shared/enforcement/gvskb_gate.py"
+  package_gate_npm: "shared/enforcement/gvskb_gate.js"
+
+agency_onboarding:
+  edit_first:
+    - "shared/institution-profile.yaml"
+    - "shared/references/approved-packages.yaml"
+    - "shared/references/package-denylist.yaml"
+  avoid_editing_first:
+    - "shared/references/lifecycle-quality-gates.yaml"
+    - "shared/references/checker-integration.md"
+    - "shared/references/harness-enforcement-contract.yaml"
+    - "shared/references/runtime-selection-policy.yaml"
+    - "shared/references/trusted-registry-integration.yaml"
+  rule: "Agency-specific values go into institution/profile and package seed files before common decision logic is changed."
 
 enforcement:
   default_mode: "MONITOR"
   rollout_after: "security/operations confirmation; recommended MONITOR 2 weeks then WARN"
   verdict_source: "vibecode-checker/gvskb"
   registry_access: "checker-mediated-only"
+  package_gate:
+    purpose: "Lightweight development-time package install guardrail; not an additional final submission artifact."
+    pypi: "shared/enforcement/gvskb_gate.py"
+    npm: "shared/enforcement/gvskb_gate.js"
+    required_before:
+      - "new package install"
+      - "dependency version change"
+      - "requirements.txt/package.json/lockfile dependency change"
+    npm_default: "--ignore-scripts"
+    final_submission_impact: "none; release submission remains checker HTML + JSON reports"
   checker_profile_policy:
     default_source: "vibecode-checker built-in profiles"
     quick_profile: "dev-quick"

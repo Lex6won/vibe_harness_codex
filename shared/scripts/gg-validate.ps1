@@ -35,9 +35,13 @@ Check-File (Join-Path $rootPath "shared\references\trusted-registry-integration.
 Check-File (Join-Path $rootPath "shared\references\checker-bootstrap-policy.md") "checker bootstrap policy"
 Check-File (Join-Path $rootPath "shared\scripts\checker-bootstrap.mjs") "checker bootstrap helper"
 Check-File (Join-Path $rootPath "shared\scripts\package-catalog-export.mjs") "package catalog export helper"
+Check-File (Join-Path $rootPath "shared\enforcement\gvskb_gate.py") "Python package install gate"
+Check-File (Join-Path $rootPath "shared\enforcement\gvskb_gate.js") "npm package install gate"
 Check-File (Join-Path $rootPath "shared\scripts\harness-final-smoke.mjs") "final harness smoke test"
 Check-File (Join-Path $rootPath "shared\references\network-profile.yaml") "canonical network profile"
 Check-File (Join-Path $rootPath "shared\references\thin-l1-policy.md") "thin L1 policy"
+Check-File (Join-Path $rootPath "shared\references\user-experience-policy.md") "user experience policy"
+Check-File (Join-Path $rootPath "shared\assets\coaching-messages.md") "coaching messages"
 Check-File (Join-Path $rootPath "shared\references\agent-handoff-contract.md") "handoff contract"
 Check-File (Join-Path $rootPath "shared\templates\11_패키지검토요청서.template.md") "package review request template"
 
@@ -97,6 +101,9 @@ if (Test-Path -LiteralPath $enforcementContract) {
   foreach ($marker in @("malicious", "registry_rejected", "not_found", "checker-mediated", "python", "javascript")) {
     if ($contractText -notmatch [regex]::Escape($marker)) { Fail "harness-enforcement-contract.yaml missing required policy text: $marker" }
   }
+  foreach ($marker in @("gvskb_gate.py", "gvskb_gate.js", "--ignore-scripts", "verify-manifest")) {
+    if ($contractText -notmatch [regex]::Escape($marker)) { Fail "harness-enforcement-contract.yaml missing package gate marker: $marker" }
+  }
 }
 
 $checkerBootstrap = Join-Path $rootPath "shared\references\checker-bootstrap-policy.md"
@@ -127,6 +134,9 @@ if (Test-Path -LiteralPath $packageGovernance) {
   }
   foreach ($marker in @("checker_signal_handling:", "kev_checked", "version_exact", "source_scope", "structured_override:")) {
     if ($governanceText -notmatch [regex]::Escape($marker)) { Fail "package-governance.yaml missing checker signal marker: $marker" }
+  }
+  foreach ($marker in @("runtime_gate:", "gvskb_gate.py", "gvskb_gate.js", "final_submission_impact")) {
+    if ($governanceText -notmatch [regex]::Escape($marker)) { Fail "package-governance.yaml missing package gate marker: $marker" }
   }
 }
 
@@ -174,6 +184,12 @@ if (Test-Path -LiteralPath $harness) {
   if ($harnessText -notmatch "lifecycle-quality-gates.yaml") { Fail "harness.yaml must point to lifecycle-quality-gates.yaml" }
   if ($harnessText -notmatch "package-alternatives.yaml") { Fail "harness.yaml must point to package-alternatives.yaml" }
   if ($harnessText -notmatch "trusted-registry-integration.yaml") { Fail "harness.yaml must point to trusted-registry-integration.yaml" }
+  if ($harnessText -notmatch "standard operating harness") { Fail "harness.yaml must declare standard operating harness identity" }
+  if ($harnessText -notmatch "coaching-messages.md") { Fail "harness.yaml must point to coaching messages" }
+  if ($harnessText -notmatch "gvskb_gate.py") { Fail "harness.yaml must point to Python package gate" }
+  if ($harnessText -notmatch "gvskb_gate.js") { Fail "harness.yaml must point to npm package gate" }
+  if ($harnessText -notmatch "final_submission_impact") { Fail "harness.yaml must state package gate does not add final submission artifacts" }
+  if ($harnessText -notmatch "agency_onboarding:") { Fail "harness.yaml must declare agency onboarding guidance" }
   if ($harnessText -notmatch "codex:\s*`"AGENTS.md`"") { Fail "harness.yaml must point Codex at root AGENTS.md" }
   if ($harnessText -notmatch "registry_access:\s*`"checker-mediated-only`"") { Fail "harness.yaml must declare checker-mediated-only registry access" }
   foreach ($marker in @("checker_profile_policy:", "quick_profile: `"dev-quick`"", "custom_policies_dir: `"absolute-path-only`"", "network_profile_is_not_checker_profile: true", "verify_applied_profile: true")) {
@@ -185,6 +201,22 @@ if (Test-Path -LiteralPath $harness) {
   if ($harnessText -notmatch "harness-final-smoke.mjs") { Fail "harness.yaml must point to harness-final-smoke.mjs" }
   if ($harnessText -notmatch "implementation_languages:\s*\r?\n\s+- `"python`"\s*\r?\n\s+- `"javascript`"") { Fail "harness.yaml must declare python/javascript implementation languages" }
   if ($harnessText -notmatch "safe_outputs:") { Fail "harness.yaml must declare safe_outputs" }
+}
+
+$pythonGate = Join-Path $rootPath "shared\enforcement\gvskb_gate.py"
+if (Test-Path -LiteralPath $pythonGate) {
+  $gateText = Get-Content -LiteralPath $pythonGate -Encoding UTF8 -Raw
+  foreach ($marker in @("check_package_impl", "audit_manifest", "verify-manifest", "GVSKB_GATE_MODE", "GVSKB_GATE_ENV_GRADE", "local_denied", "registry_rejected", "not_found", "in_kev")) {
+    if ($gateText -notmatch [regex]::Escape($marker)) { Fail "gvskb_gate.py missing required marker: $marker" }
+  }
+}
+
+$npmGate = Join-Path $rootPath "shared\enforcement\gvskb_gate.js"
+if (Test-Path -LiteralPath $npmGate) {
+  $gateText = Get-Content -LiteralPath $npmGate -Encoding UTF8 -Raw
+  foreach ($marker in @("GVSKB_GATE_PYTHON", "gvskb_gate.py", "--ignore-scripts", "verify-manifest", "npm", "install")) {
+    if ($gateText -notmatch [regex]::Escape($marker)) { Fail "gvskb_gate.js missing required marker: $marker" }
+  }
 }
 
 $mcpConfig = Join-Path $rootPath ".claude\.mcp.json"
@@ -230,8 +262,19 @@ if (Test-Path -LiteralPath $readme) {
     if ($readmeText -notmatch [regex]::Escape($marker)) { Fail "README.md missing GitHub distribution marker: $marker" }
   }
   if ($readmeText -notmatch "harness-final-smoke.mjs") { Fail "README.md must document final harness smoke test" }
+  foreach ($marker in @("표준 운영 하네스", "초보 공무원", "구상 → 표준 템플릿 구현", "처음에는 아래 파일을 수정 대상으로 보지 않는 것이 좋습니다", "shared/assets/coaching-messages.md")) {
+    if ($readmeText -notmatch [regex]::Escape($marker)) { Fail "README.md missing operating-harness UX marker: $marker" }
+  }
   foreach ($marker in @("dev-quick", "GVSKB_POLICIES_DIR", "network_profile", "검증 미완료", "profile_fallback", "gvskb-server")) {
     if ($readmeText -notmatch [regex]::Escape($marker)) { Fail "README.md missing checker profile integration marker: $marker" }
+  }
+}
+
+$coachingMessages = Join-Path $rootPath "shared\assets\coaching-messages.md"
+if (Test-Path -LiteralPath $coachingMessages) {
+  $coachingText = Get-Content -LiteralPath $coachingMessages -Encoding UTF8 -Raw
+  foreach ($marker in @("패키지 차단", "보안 점검", "체커 미설치", "배포 전 제출", "안 됩니다")) {
+    if ($coachingText -notmatch [regex]::Escape($marker)) { Fail "coaching-messages.md missing marker: $marker" }
   }
 }
 

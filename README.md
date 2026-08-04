@@ -1,12 +1,22 @@
 ﻿# vibe_harness_codex
 
-공공기관 공무원이 바이브코딩으로 업무 도구를 구상·시제품화·내부도구화하고, 정식 운영이 필요할 때 운영팀과 보안팀이 이어받을 수 있는 산출물을 남기도록 돕는 **공공 바이브코딩 실행 하네스**입니다.
+공공기관 공무원이 바이브코딩으로 업무 도구를 구상·시제품화·내부도구화하고, 정식 운영이 필요할 때 운영팀과 보안팀이 이어받을 수 있는 산출물을 남기도록 돕는 **공공 바이브코딩 표준 운영 하네스**입니다.
 
 이 저장소는 [`revfactory/harness-100`](https://github.com/revfactory/harness-100)의 “전문 에이전트 팀 + 오케스트레이터 스킬 + 보조 스킬 + 구조화 산출물” 방식을 참고했습니다. 단, 목적은 범용 하네스 모음이 아니라 **행정망/외부망, 공공 보안, 승인 패키지, 배포·이관 산출물**을 지키는 공공 특화 하네스입니다.
 
+## Codex 하네스의 위치
+
+Claude 하네스가 빠르게 시제품을 만들기 좋은 현장 실행형이라면, Codex 하네스는 여러 기관과 여러 AI 코딩 도구가 같은 기준으로 움직이도록 돕는 표준 운영형입니다.
+
+겉으로는 초보 공무원이 쉽게 따라갈 수 있는 업무 코치처럼 작동하고, 내부적으로는 기관 프로파일·골든 템플릿·체커 검증·최종 제출 증적을 일관되게 남기는 운영 레일입니다.
+
+핵심 정의는 다음입니다.
+
+> 초보 공무원에게는 쉬운 길을 보여주고, 기관 담당자에게는 검증 가능한 표준 산출물을 남겨주는 공공 바이브코딩 운영 하네스.
+
 ## 하네스 주제
 
-**공공 바이브코딩 실행 하네스**입니다.
+**공공 바이브코딩 표준 운영 하네스**입니다.
 
 공무원이 “이런 업무 도구가 필요하다”고 말하면, AI가 업무 요구를 구체화하고 공공 운영환경에 맞는 개발 방향을 잡아주며, 보안·패키지·행정망/외부망 제약을 놓치지 않도록 돕습니다.
 
@@ -45,14 +55,19 @@
 | 하네스 공식 저장소 | `https://github.com/Lex6won/vibe_harness_codex` |
 | 체커 공식 저장소 | `https://github.com/Lex6won/vibecode-checker` |
 | Codex 최상위 진입점 | `AGENTS.md` |
-| 기관별 단일 설정 파일 | `shared/institution-profile.yaml` |
+| 운영 컨셉 | 여러 AI 코딩 도구가 같은 정책·템플릿·검증 기준을 따르는 표준 운영 하네스 |
+| 초보자 기본 UX | 구상 → 표준 템플릿 구현 → 필요한 때만 보안점검 → 배포 전 리포트 2종 안내 |
+| 기관별 1차 설정 파일 | `shared/institution-profile.yaml` |
+| 기관별 2차 패키지 정책 | `shared/references/approved-packages.yaml`, `shared/references/package-denylist.yaml` |
 | 벤더 중립 선언 파일 | `shared/harness.yaml` |
 | 런타임 선택 정책 | `shared/references/runtime-selection-policy.yaml` |
 | 생명주기 품질 게이트 | `shared/references/lifecycle-quality-gates.yaml` |
 | 하네스 집행 계약 | `shared/references/harness-enforcement-contract.yaml` |
 | 패키지 거버넌스 | `shared/references/package-governance.yaml` |
 | 패키지 대체안 정책 | `shared/references/package-alternatives.yaml` |
+| 패키지 설치 게이트 | `shared/enforcement/gvskb_gate.py`, `shared/enforcement/gvskb_gate.js` |
 | Registry 연계 정책 | `shared/references/trusted-registry-integration.yaml` |
+| 공무원용 코칭 문구 | `shared/assets/coaching-messages.md` |
 | 주요 네트워크 프로파일 | 행정망 / DMZ·외부망 / 인터넷 시제품 |
 | 검증 스크립트 | `shared/scripts/gg-validate.ps1` |
 | 최종 스모크 테스트 | `shared/scripts/harness-final-smoke.mjs` |
@@ -63,13 +78,15 @@
 
 ## 기관별 적용
 
-다른 시군·기관에서 사용할 때는 먼저 아래 파일 하나를 기관 환경에 맞게 수정합니다.
+다른 시군·기관에서 사용할 때는 처음부터 모든 정책 파일을 열지 않습니다. 먼저 아래 두 축만 확인합니다.
 
 ```text
 shared/institution-profile.yaml
+shared/references/approved-packages.yaml
+shared/references/package-denylist.yaml
 ```
 
-이 파일에 개발서버와 운영서버 환경, 허용 개발언어, 허용 DBMS, 사용 가능한 AI 도구·MCP·플러그인, 추가 허용/제한/차단 라이브러리를 적습니다. 하네스는 이 파일을 최우선 기준으로 보고, `shared/references/`의 파일들은 공통 기본값과 카탈로그로만 사용합니다.
+`shared/institution-profile.yaml`에는 개발서버와 운영서버 환경, 허용 개발언어, 허용 DBMS, 사용 가능한 AI 도구·MCP·플러그인, 기관별 추가 허용/제한/차단 라이브러리를 적습니다. 패키지 seed를 기관 미러 기준으로 조정해야 하면 `approved-packages.yaml`과 `package-denylist.yaml`만 먼저 봅니다. 하네스는 기관 프로파일을 최우선 기준으로 보고, 나머지 `shared/references/` 파일들은 공통 정책 엔진과 기본 카탈로그로 사용합니다.
 
 기관별로 자주 바꾸는 항목은 다음입니다.
 
@@ -81,6 +98,14 @@ shared/institution-profile.yaml
 - 서버 프로파일: small/standard/large_or_special 등 CPU·메모리 기준과 권장 서비스 유형
 
 작성 기준은 `shared/references/institution-profile-guide.md`에 정리되어 있습니다.
+
+처음에는 아래 파일을 수정 대상으로 보지 않는 것이 좋습니다. 이 파일들은 기관별 값이 아니라 공통 판정 로직에 가깝습니다.
+
+- `shared/references/lifecycle-quality-gates.yaml`
+- `shared/references/checker-integration.md`
+- `shared/references/harness-enforcement-contract.yaml`
+- `shared/references/runtime-selection-policy.yaml`
+- `shared/references/trusted-registry-integration.yaml`
 
 개발언어는 사용자가 직접 고르게 하기보다, 기관 프로파일과 서버 사양을 기준으로 하네스가 먼저 추천합니다. 이 기준은 아래 파일에 있습니다.
 
@@ -119,6 +144,7 @@ vibe_harness_codex/
 │   ├── harness.yaml                  # 도구 중립 하네스 선언
 │   ├── golden-templates/             # 구현 가드레일이 담긴 실행 템플릿
 │   ├── references/                   # 정책·운영·보안 기준
+│   ├── assets/                       # 공무원용 코칭 문구와 UX 자산
 │   ├── scripts/                      # 검증·패키징 스크립트
 │   └── templates/                    # PRD/설계/검증/신청 산출물 템플릿
 ├── adapters/                         # Codex, Claude Code, Lovable 어댑터
@@ -151,8 +177,19 @@ Claude Code 호환 진입점은 다음입니다.
 ## 작동 흐름
 
 ```text
+겉으로 보이는 기본 흐름:
+
 업무 아이디어
-→ 사용자 범위 확인
+→ 만들 화면·입력·출력 정리
+→ 기관 표준 템플릿으로 구현
+→ 위험할 때만 quick 점검
+→ 배포 전 full 점검과 최종 리포트 2종 제출 안내
+```
+
+내부 운영 흐름:
+
+```text
+사용자 범위 확인
 → 목표 성숙도 판정
 → 화면·입력·출력 구상
 → 행정망/외부망·데이터 위험 판정
@@ -174,12 +211,8 @@ quick/standard/full은 하네스 단계 이름이고, 실제 체커 호출에는
 L1 시제품은 빠른 결과물을 위해 축약 흐름을 사용합니다.
 
 ```text
-intake-guide
-→ feature-discovery
-→ template-engineer
-→ gg-platform-coder
-→ security-checker(quick)
-→ qa-operator
+사용자에게 보이는 흐름: 구상 → 만들기 → 확인
+내부 실행 흐름: intake-guide → feature-discovery → template-engineer → gg-platform-coder → security-checker(quick, 필요 시) → qa-operator
 ```
 
 위험 신호가 있으면 상세 흐름으로 승격합니다.
@@ -488,6 +521,34 @@ shared/references/network-profile.yaml
 3. 하네스: `verdict`를 받아 설치·사용·배포 이관을 pass/warn/block으로 제한한다.
 
 하네스는 일반 패키지 결정을 위해 레지스트리를 직접 호출하지 않습니다. 정상 경로는 하네스 → `vibecode-checker/gvskb` → 레지스트리 → `vibecode-checker/gvskb` → 하네스입니다.
+
+새 패키지를 추가할 때는 하네스 게이트를 먼저 통과해야 합니다. 이 게이트는 개발 중 설치를 막아주는 얇은 안전장치이며, 최종 제출 문서를 추가로 만들지 않습니다.
+
+```powershell
+# Python/PyPI 단일 패키지 확인
+python .\shared\enforcement\gvskb_gate.py check requests --ecosystem pypi
+
+# 확인 후 pip install
+python .\shared\enforcement\gvskb_gate.py install requests --ecosystem pypi
+
+# JavaScript/npm 단일 패키지 확인
+node .\shared\enforcement\gvskb_gate.js check axios
+
+# 확인 후 npm install, 기본값은 --ignore-scripts
+node .\shared\enforcement\gvskb_gate.js install axios
+
+# 개발 중 매니페스트 확인. 최종 리포트 생성은 아님
+python .\shared\enforcement\gvskb_gate.py verify-manifest .\requirements.txt --ecosystem pypi
+node .\shared\enforcement\gvskb_gate.js verify-manifest .\package.json
+```
+
+Windows에서 `python`이 Microsoft Store 별칭이면 실제 Python 경로를 지정합니다.
+
+```powershell
+$env:GVSKB_GATE_PYTHON="C:\Python313\python.exe"
+```
+
+템플릿 초기 설치처럼 이미 검토된 lockfile 또는 manifest를 그대로 설치하는 경우에는 일반 패키지 매니저를 쓸 수 있습니다. 다만 새 패키지를 추가하거나 버전을 바꾸는 순간에는 위 게이트를 먼저 사용합니다.
 
 패키지 상태와 승인 흐름의 기준은 다음입니다.
 

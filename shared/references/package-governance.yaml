@@ -10,6 +10,11 @@ source_of_truth:
   future_mode: "registry-service-through-vibecode-checker"
   generated_snapshot: "generated/package-policy.snapshot.json"
   normal_decision_input: "vibecode-checker/gvskb verdict"
+  runtime_gate:
+    pypi: "shared/enforcement/gvskb_gate.py"
+    npm: "shared/enforcement/gvskb_gate.js"
+    purpose: "Check newly added packages before install while keeping coding flow lightweight."
+    final_submission_impact: "none; final release submission remains checker HTML and JSON reports."
   fallback_order:
     - "shared/references/package-denylist.yaml"
     - "vibecode-checker/gvskb scan_dependencies verdict"
