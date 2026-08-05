@@ -37,6 +37,8 @@ Check-File (Join-Path $rootPath "shared\scripts\checker-bootstrap.mjs") "checker
 Check-File (Join-Path $rootPath "shared\scripts\package-catalog-export.mjs") "package catalog export helper"
 Check-File (Join-Path $rootPath "shared\enforcement\gvskb_gate.py") "Python package install gate"
 Check-File (Join-Path $rootPath "shared\enforcement\gvskb_gate.js") "npm package install gate"
+Check-File (Join-Path $rootPath ".mcp.json") "common MCP config"
+Check-File (Join-Path $rootPath ".codex\config.toml") "Codex project MCP config"
 Check-File (Join-Path $rootPath "shared\scripts\harness-final-smoke.mjs") "final harness smoke test"
 Check-File (Join-Path $rootPath "shared\references\network-profile.yaml") "canonical network profile"
 Check-File (Join-Path $rootPath "shared\references\thin-l1-policy.md") "thin L1 policy"
@@ -109,7 +111,7 @@ if (Test-Path -LiteralPath $enforcementContract) {
 $checkerBootstrap = Join-Path $rootPath "shared\references\checker-bootstrap-policy.md"
 if (Test-Path -LiteralPath $checkerBootstrap) {
   $bootstrapText = Get-Content -LiteralPath $checkerBootstrap -Encoding UTF8 -Raw
-  foreach ($marker in @("https://github.com/Lex6won/vibecode-checker", "사용자", "확인", "checker-bootstrap.mjs", "--yes", "--install-python", "GVSKB_MODE=offline")) {
+  foreach ($marker in @("https://github.com/Lex6won/vibecode-checker", "사용자", "확인", "checker-bootstrap.mjs", "--yes", "--install-python", ".mcp.json", ".codex/config.toml", "망분리/offline")) {
     if ($bootstrapText -notmatch [regex]::Escape($marker)) { Fail "checker-bootstrap-policy.md missing required marker: $marker" }
   }
   if ($bootstrapText -notmatch [regex]::Escape("https://github.com/Lex6won/vibe_harness_codex")) { Fail "checker-bootstrap-policy.md must declare the canonical harness GitHub repository" }
@@ -186,6 +188,8 @@ if (Test-Path -LiteralPath $harness) {
   if ($harnessText -notmatch "trusted-registry-integration.yaml") { Fail "harness.yaml must point to trusted-registry-integration.yaml" }
   if ($harnessText -notmatch "standard operating harness") { Fail "harness.yaml must declare standard operating harness identity" }
   if ($harnessText -notmatch "coaching-messages.md") { Fail "harness.yaml must point to coaching messages" }
+  if ($harnessText -notmatch "common_mcp_config") { Fail "harness.yaml must point to root .mcp.json" }
+  if ($harnessText -notmatch "codex_project_config") { Fail "harness.yaml must point to .codex/config.toml" }
   if ($harnessText -notmatch "gvskb_gate.py") { Fail "harness.yaml must point to Python package gate" }
   if ($harnessText -notmatch "gvskb_gate.js") { Fail "harness.yaml must point to npm package gate" }
   if ($harnessText -notmatch "final_submission_impact") { Fail "harness.yaml must state package gate does not add final submission artifacts" }
@@ -206,9 +210,10 @@ if (Test-Path -LiteralPath $harness) {
 $pythonGate = Join-Path $rootPath "shared\enforcement\gvskb_gate.py"
 if (Test-Path -LiteralPath $pythonGate) {
   $gateText = Get-Content -LiteralPath $pythonGate -Encoding UTF8 -Raw
-  foreach ($marker in @("check_package_impl", "audit_manifest", "verify-manifest", "GVSKB_GATE_MODE", "GVSKB_GATE_ENV_GRADE", "local_denied", "registry_rejected", "not_found", "in_kev")) {
+  foreach ($marker in @("audit_manifest", "verify-manifest", "GVSKB_GATE_MODE", "GVSKB_GATE_ENV_GRADE", "package_manifest_text", "max_cve", "heuristics", "typosquat_warning", "local_denied", "registry_rejected", "not_found", "in_kev")) {
     if ($gateText -notmatch [regex]::Escape($marker)) { Fail "gvskb_gate.py missing required marker: $marker" }
   }
+  if ($gateText -match "check_package_impl") { Fail "gvskb_gate.py must use audit_manifest instead of check_package_impl" }
 }
 
 $npmGate = Join-Path $rootPath "shared\enforcement\gvskb_gate.js"
@@ -219,40 +224,58 @@ if (Test-Path -LiteralPath $npmGate) {
   }
 }
 
-$mcpConfig = Join-Path $rootPath ".claude\.mcp.json"
+$mcpConfig = Join-Path $rootPath ".mcp.json"
 if (Test-Path -LiteralPath $mcpConfig) {
   try {
     $mcpBytes = [System.IO.File]::ReadAllBytes($mcpConfig)
     if ($mcpBytes.Length -ge 3 -and $mcpBytes[0] -eq 0xEF -and $mcpBytes[1] -eq 0xBB -and $mcpBytes[2] -eq 0xBF) {
-      Fail ".claude/.mcp.json must be UTF-8 without BOM"
+      Fail ".mcp.json must be UTF-8 without BOM"
     }
     $mcpJson = Get-Content -LiteralPath $mcpConfig -Encoding UTF8 -Raw | ConvertFrom-Json
     $checkerServer = $mcpJson.mcpServers.'vibecode-checker'
-    if (-not $checkerServer) { Fail ".claude/.mcp.json must define mcpServers.vibecode-checker" }
+    if (-not $checkerServer) { Fail ".mcp.json must define mcpServers.vibecode-checker" }
     $checkerCommand = [string]$checkerServer.command
     $checkerArgs = @($checkerServer.args)
     $usesGvskbServer = $checkerCommand -eq "gvskb-server" -and $checkerArgs.Count -eq 0
     $usesPythonModule = $checkerCommand -eq "python" -and $checkerArgs.Count -eq 2 -and $checkerArgs[0] -eq "-m" -and $checkerArgs[1] -eq "gvskb.server"
     if (-not ($usesGvskbServer -or $usesPythonModule)) {
-      Fail ".claude/.mcp.json checker command must be gvskb-server or python -m gvskb.server"
+      Fail ".mcp.json checker command must be gvskb-server or python -m gvskb.server"
     }
     if ($checkerCommand -eq "gvskb" -and $checkerArgs -contains "mcp") {
-      Fail ".claude/.mcp.json must not use invalid command gvskb mcp"
+      Fail ".mcp.json must not use invalid command gvskb mcp"
     }
-    foreach ($envMarker in @("PYTHONUTF8", "PYTHONIOENCODING", "GVSKB_MODE")) {
+    foreach ($envMarker in @("PYTHONUTF8", "PYTHONIOENCODING")) {
       if (-not ($checkerServer.env -and ($checkerServer.env.PSObject.Properties.Name -contains $envMarker))) {
-        Fail ".claude/.mcp.json missing required checker env: $envMarker"
+        Fail ".mcp.json missing required checker env: $envMarker"
       }
+    }
+    if ($checkerServer.env -and ($checkerServer.env.PSObject.Properties.Name -contains "GVSKB_MODE")) {
+      Fail ".mcp.json must not hard-code GVSKB_MODE"
     }
     if ($checkerServer -and $checkerServer.env -and ($checkerServer.env.PSObject.Properties.Name -contains "GVSKB_POLICIES_DIR")) {
       $policyDir = [string]$checkerServer.env.GVSKB_POLICIES_DIR
       if (-not [System.IO.Path]::IsPathRooted($policyDir)) {
-        Fail ".claude/.mcp.json GVSKB_POLICIES_DIR must be an absolute path or omitted"
+        Fail ".mcp.json GVSKB_POLICIES_DIR must be an absolute path or omitted"
       }
     }
   } catch {
-    Fail "INVALID .claude/.mcp.json: $($_.Exception.Message)"
+    Fail "INVALID .mcp.json: $($_.Exception.Message)"
   }
+}
+
+$codexConfig = Join-Path $rootPath ".codex\config.toml"
+if (Test-Path -LiteralPath $codexConfig) {
+  $codexConfigText = Get-Content -LiteralPath $codexConfig -Encoding UTF8 -Raw
+  foreach ($marker in @("[mcp_servers.vibecode-checker]", "command = `"gvskb-server`"", "PYTHONUTF8", "PYTHONIOENCODING")) {
+    if ($codexConfigText -notmatch [regex]::Escape($marker)) { Fail ".codex/config.toml missing marker: $marker" }
+  }
+  if ($codexConfigText -match "GVSKB_MODE") { Fail ".codex/config.toml must not hard-code GVSKB_MODE" }
+}
+
+$claudeMcpConfig = Join-Path $rootPath ".claude\.mcp.json"
+if (Test-Path -LiteralPath $claudeMcpConfig) {
+  $claudeMcpText = Get-Content -LiteralPath $claudeMcpConfig -Encoding UTF8 -Raw
+  if ($claudeMcpText -match "GVSKB_MODE") { Fail ".claude/.mcp.json must not hard-code GVSKB_MODE" }
 }
 
 $readme = Join-Path $rootPath "README.md"

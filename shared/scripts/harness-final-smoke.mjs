@@ -58,6 +58,9 @@ requireText("README.md", [
   "shared/assets/coaching-messages.md",
   "shared/enforcement/gvskb_gate.py",
   "shared/enforcement/gvskb_gate.js",
+  ".mcp.json",
+  ".codex/config.toml",
+  "망분리·반입 환경으로 확인된 경우에만 설정",
 ]);
 
 requireText("AGENTS.md", [
@@ -87,6 +90,8 @@ requireText("shared/harness.yaml", [
   "checker-mediated-only",
   "checker_profile_policy:",
   "package_gate:",
+  "common_mcp_config",
+  "codex_project_config",
   "gvskb_gate.py",
   "gvskb_gate.js",
   "final_submission_impact",
@@ -144,6 +149,8 @@ requireText("shared/references/checker-bootstrap-policy.md", [
   "사용자가 명시적으로 동의하기 전에는",
   "https://github.com/Lex6won/vibecode-checker",
   "https://github.com/Lex6won/vibe_harness_codex",
+  "루트 `.mcp.json`",
+  ".codex/config.toml",
   "dev-quick",
   "GVSKB_POLICIES_DIR",
   "gvskb-server",
@@ -166,15 +173,22 @@ requireText("shared/references/checker-integration.md", [
 ]);
 
 requireText("shared/enforcement/gvskb_gate.py", [
-  "check_package_impl",
   "audit_manifest",
   "verify-manifest",
   "GVSKB_GATE_MODE",
+  "package_manifest_text",
+  "max_cve",
+  "heuristics",
+  "typosquat_warning",
   "local_denied",
   "registry_rejected",
   "not_found",
   "in_kev",
 ]);
+
+if (readText("shared/enforcement/gvskb_gate.py").includes("check_package_impl")) {
+  failures.push("shared/enforcement/gvskb_gate.py must use audit_manifest instead of check_package_impl");
+}
 
 requireText("shared/enforcement/gvskb_gate.js", [
   "GVSKB_GATE_PYTHON",
@@ -249,10 +263,10 @@ for (const file of walk("evals")) {
   }
 }
 
-const mcpConfigText = readText(".claude/.mcp.json");
-const mcpConfigBytes = readFileSync(join(root, ".claude/.mcp.json"));
+const mcpConfigText = readText(".mcp.json");
+const mcpConfigBytes = readFileSync(join(root, ".mcp.json"));
 if (mcpConfigBytes.length >= 3 && mcpConfigBytes[0] === 0xef && mcpConfigBytes[1] === 0xbb && mcpConfigBytes[2] === 0xbf) {
-  failures.push(".claude/.mcp.json must be UTF-8 without BOM");
+  failures.push(".mcp.json must be UTF-8 without BOM");
 }
 const parsedMcpConfig = JSON.parse(mcpConfigText);
 const checkerServer = parsedMcpConfig?.mcpServers?.["vibecode-checker"];
@@ -261,21 +275,42 @@ const checkerArgs = Array.isArray(checkerServer?.args) ? checkerServer.args : []
 const usesGvskbServer = checkerCommand === "gvskb-server" && checkerArgs.length === 0;
 const usesPythonModule = checkerCommand === "python" && checkerArgs.length === 2 && checkerArgs[0] === "-m" && checkerArgs[1] === "gvskb.server";
 if (!usesGvskbServer && !usesPythonModule) {
-  failures.push(".claude/.mcp.json checker command must be gvskb-server or python -m gvskb.server");
+  failures.push(".mcp.json checker command must be gvskb-server or python -m gvskb.server");
 }
 if (checkerCommand === "gvskb" && checkerArgs.includes("mcp")) {
-  failures.push(".claude/.mcp.json must not use invalid command gvskb mcp");
+  failures.push(".mcp.json must not use invalid command gvskb mcp");
 }
-for (const envName of ["PYTHONUTF8", "PYTHONIOENCODING", "GVSKB_MODE"]) {
+for (const envName of ["PYTHONUTF8", "PYTHONIOENCODING"]) {
   if (!Object.prototype.hasOwnProperty.call(checkerServer?.env || {}, envName)) {
-    failures.push(`.claude/.mcp.json missing required checker env: ${envName}`);
+    failures.push(`.mcp.json missing required checker env: ${envName}`);
   }
+}
+if (Object.prototype.hasOwnProperty.call(checkerServer?.env || {}, "GVSKB_MODE")) {
+  failures.push(".mcp.json must not hard-code GVSKB_MODE; set offline only in confirmed air-gapped environments");
 }
 if (mcpConfigText.includes("GVSKB_POLICIES_DIR")) {
   const policyDir = parsedMcpConfig?.mcpServers?.["vibecode-checker"]?.env?.GVSKB_POLICIES_DIR;
   if (typeof policyDir === "string" && !/^([A-Za-z]:[\\/]|\/)/.test(policyDir)) {
-    failures.push(".claude/.mcp.json GVSKB_POLICIES_DIR must be absolute or omitted");
+    failures.push(".mcp.json GVSKB_POLICIES_DIR must be absolute or omitted");
   }
+}
+
+const codexConfig = readText(".codex/config.toml");
+for (const marker of [
+  "[mcp_servers.vibecode-checker]",
+  "command = \"gvskb-server\"",
+  "PYTHONUTF8",
+  "PYTHONIOENCODING",
+]) {
+  if (!codexConfig.includes(marker)) failures.push(`.codex/config.toml missing marker: ${marker}`);
+}
+if (codexConfig.includes("GVSKB_MODE")) {
+  failures.push(".codex/config.toml must not hard-code GVSKB_MODE");
+}
+
+const claudeMcpText = readText(".claude/.mcp.json");
+if (claudeMcpText.includes("GVSKB_MODE")) {
+  failures.push(".claude/.mcp.json must not hard-code GVSKB_MODE");
 }
 
 const finalEval = readText("evals/04_final_release_harness.json");

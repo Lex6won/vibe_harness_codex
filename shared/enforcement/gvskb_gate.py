@@ -161,13 +161,13 @@ def catalog_status(name: str, ecosystem: str, catalog: dict[str, dict[str, set[s
 
 def import_checker():
     try:
-        from gvskb.tools.check_package import check_package_impl, audit_manifest  # type: ignore
+        from gvskb.tools.check_package import audit_manifest  # type: ignore
     except Exception as exc:
         raise RuntimeError(
             "vibecode-checker(gvskb)가 설치되어 있지 않습니다. "
             "https://github.com/Lex6won/vibecode-checker 기반 설치 후 다시 실행하세요."
         ) from exc
-    return check_package_impl, audit_manifest
+    return audit_manifest
 
 
 def severity_rank(severity: str | None) -> int:
@@ -184,7 +184,7 @@ def stronger_action(left: str, right: str) -> str:
 
 
 def mode_action_for_vulnerability(mode: str, severity: str | None, version_exact: bool) -> str:
-    if not severity or str(severity).strip().lower() in {"", "unknown", "none", "null"}:
+    if not severity or str(severity).strip().lower() in {"", "unknown", "null"}:
         return "block" if mode == "ENFORCE" and version_exact else "warn"
     rank = severity_rank(severity)
     if rank >= 3:
@@ -255,13 +255,14 @@ def evaluate_package(
         }
 
     result = checker_result or {}
-    verdict = str(result.get("verdict") or result.get("status") or "unknown").lower()
+    verdict = str(result.get("verdict") or "unknown").lower()
     checked = bool(result.get("checked", False))
     in_kev = bool(result.get("in_kev", False))
     kev_checked = result.get("kev_checked")
-    max_cve_severity = result.get("max_cve_severity") or result.get("severity")
+    max_cve = result.get("max_cve") or result.get("verdict_severity")
     version_exact = bool(result.get("version_exact", True))
-    typosquat = result.get("typosquat")
+    heuristics = result.get("heuristics") if isinstance(result.get("heuristics"), dict) else {}
+    typosquat_warning = heuristics.get("typosquat_warning")
 
     if verdict in {"malicious", "registry_rejected", "not_found"}:
         action = "block"
@@ -271,10 +272,10 @@ def evaluate_package(
         reasons.append("CISA KEV 등 알려진 악용 취약점 신호가 있어 설치를 차단합니다.")
 
     if verdict == "vulnerable":
-        vulnerability_action = mode_action_for_vulnerability(mode, str(max_cve_severity or ""), version_exact)
+        vulnerability_action = mode_action_for_vulnerability(mode, str(max_cve or ""), version_exact)
         action = stronger_action(action, vulnerability_action)
         reasons.append(
-            f"취약점 신호가 있습니다(severity={max_cve_severity or 'unknown'}, "
+            f"취약점 신호가 있습니다(max_cve={max_cve or 'unknown'}, "
             f"version_exact={version_exact})."
         )
     elif verdict == "cooldown_hold":
@@ -295,9 +296,13 @@ def evaluate_package(
             action = stronger_action(action, unverified_action)
             reasons.append("레지스트리 승인 상태이나 최신 검사 완료 신호가 없습니다.")
 
-    if typosquat:
+    if typosquat_warning:
         action = stronger_action(action, "warn")
-        reasons.append(f"타이포스쿼팅 의심 신호가 있습니다: {typosquat}")
+        reasons.append(f"타이포스쿼팅 의심 신호가 있습니다: {typosquat_warning}")
+
+    if version is None and source_scope in {"single", "manifest", "manifest_direct"} and action == "pass":
+        action = stronger_action(action, "warn")
+        reasons.append("정확한 버전이 지정되지 않았습니다. 설치 후 lockfile 또는 exact version으로 다시 점검하세요.")
 
     if kev_checked is False and action == "pass" and mode in {"WARN", "ENFORCE"}:
         action = stronger_action(action, "warn")
@@ -326,19 +331,46 @@ def evaluate_package(
         "checked": checked,
         "in_kev": in_kev,
         "kev_checked": kev_checked,
-        "max_cve_severity": max_cve_severity,
+        "max_cve": max_cve,
         "version_exact": version_exact,
         "source_scope": source_scope,
     }
 
 
-async def run_checker(name: str, ecosystem: str, version: str | None, env_grade: str) -> dict[str, Any]:
-    check_package_impl, _ = import_checker()
-    return await check_package_impl(name, ecosystem=ecosystem, version=version, env_grade=env_grade)
+def package_manifest_text(name: str, ecosystem: str, version: str | None) -> tuple[str, str]:
+    if ecosystem == "pypi":
+        return (f"{name}=={version}\n" if version else f"{name}\n"), "requirements.txt"
+    npm_manifest = {
+        "name": "gvskb-gate-single-package-check",
+        "private": True,
+        "dependencies": {
+            name: version or "latest"
+        },
+    }
+    return json.dumps(npm_manifest, ensure_ascii=False), "package.json"
+
+
+async def run_package_audit(name: str, ecosystem: str, version: str | None, env_grade: str) -> dict[str, Any]:
+    audit_manifest = import_checker()
+    text, filename = package_manifest_text(name, ecosystem, version)
+    audit = await audit_manifest(text, ecosystem=ecosystem, env_grade=env_grade, filename=filename)
+    checks = audit.get("checks")
+    if isinstance(checks, list) and checks:
+        first = checks[0] if isinstance(checks[0], dict) else {}
+        first.setdefault("source_scope", "manifest")
+        return first
+    return {
+        "name": name,
+        "version": version,
+        "verdict": audit.get("verdict") or "unknown",
+        "registry_status": audit.get("registry_status"),
+        "checked": False,
+        "source_scope": "manifest",
+    }
 
 
 async def run_manifest_audit(path: Path, ecosystem: str, limit: int | None, env_grade: str) -> dict[str, Any]:
-    _, audit_manifest = import_checker()
+    audit_manifest = import_checker()
     text = path.read_text(encoding="utf-8")
     return await audit_manifest(
         text,
@@ -402,7 +434,7 @@ async def command_check(args: argparse.Namespace) -> int:
     checker_error: str | None = None
     if catalog_status(name, ecosystem, catalog) != "local_denied":
         try:
-            checker_result = await run_checker(name, ecosystem, version, env_grade)
+            checker_result = await run_package_audit(name, ecosystem, version, env_grade)
         except Exception as exc:
             checker_error = str(exc)
 
@@ -415,7 +447,7 @@ async def command_check(args: argparse.Namespace) -> int:
         catalog=catalog,
         checker_result=checker_result,
         checker_error=checker_error,
-        source_scope="single",
+        source_scope=str((checker_result or {}).get("source_scope") or "manifest"),
     )
     if args.json:
         print(json.dumps(decision, ensure_ascii=False, indent=2))
@@ -429,15 +461,6 @@ async def command_install(args: argparse.Namespace) -> int:
         print("gvskb_gate.py install은 Python/pip 전용입니다. npm은 gvskb_gate.js install을 사용하세요.", file=sys.stderr)
         return EXIT_USAGE
 
-    check_args = argparse.Namespace(
-        package=args.package,
-        ecosystem="pypi",
-        version=args.version,
-        mode=args.mode,
-        env_grade=args.env_grade,
-        json=True,
-    )
-
     profile = load_yaml(shared_root() / "institution-profile.yaml")
     mode = (args.mode or default_mode(profile)).upper()
     env_grade = (args.env_grade or default_env_grade(profile)).upper()
@@ -448,7 +471,7 @@ async def command_install(args: argparse.Namespace) -> int:
     checker_error: str | None = None
     if catalog_status(name, "pypi", catalog) != "local_denied":
         try:
-            checker_result = await run_checker(name, "pypi", version, env_grade)
+            checker_result = await run_package_audit(name, "pypi", version, env_grade)
         except Exception as exc:
             checker_error = str(exc)
 
@@ -461,7 +484,7 @@ async def command_install(args: argparse.Namespace) -> int:
         catalog=catalog,
         checker_result=checker_result,
         checker_error=checker_error,
-        source_scope="single",
+        source_scope=str((checker_result or {}).get("source_scope") or "manifest"),
     )
 
     print_text(decision)

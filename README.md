@@ -139,6 +139,8 @@ shared/harness.yaml
 ```text
 vibe_harness_codex/
 ├── AGENTS.md                         # Codex 최상위 진입점
+├── .codex/config.toml                # Codex CLI/IDE용 프로젝트 MCP 설정
+├── .mcp.json                         # 공통 MCP 설정
 ├── shared/
 │   ├── institution-profile.yaml      # 기관별 단일 설정 파일
 │   ├── harness.yaml                  # 도구 중립 하네스 선언
@@ -206,7 +208,7 @@ quick/standard/full은 하네스 단계 이름이고, 실제 체커 호출에는
 
 예를 들어 `dev-quick`을 요청했는데 현재 설치된 체커가 이를 알 수 없는 프로파일로 보고 `public-default-strict`로 대체했다면, quick 점검은 완료된 것이 아닙니다. GitHub 기준 최신 체커로 갱신하거나 기관 정책 경로를 절대경로로 바로잡은 뒤 다시 확인해야 합니다.
 
-체커 MCP 설정은 `gvskb mcp`가 아니라 `gvskb-server` 또는 `python -m gvskb.server`로 실행해야 합니다. Windows에서 `python`이 Microsoft Store 별칭인 경우가 있으므로 기본 배포 설정은 `gvskb-server`를 사용합니다. `.claude/.mcp.json`은 BOM 없는 UTF-8로 저장하고 `PYTHONUTF8=1`, `PYTHONIOENCODING=utf-8`, `GVSKB_MODE=offline`을 포함해야 합니다. 체커가 `profile_fallback`을 반환하면 `null`일 때만 정상 적용이며, 객체가 있으면 검증 미완료입니다.
+체커 MCP 설정은 `gvskb mcp`가 아니라 `gvskb-server` 또는 `python -m gvskb.server`로 실행해야 합니다. Windows에서 `python`이 Microsoft Store 별칭인 경우가 있으므로 기본 배포 설정은 `gvskb-server`를 사용합니다. 공통 MCP 설정은 루트 `.mcp.json`에 두고, Codex CLI/IDE는 `.codex/config.toml` 또는 사용자 전역 `~/.codex/config.toml`의 `[mcp_servers.vibecode-checker]`를 사용합니다. `GVSKB_MODE=offline`은 기본값이 아니며, 망분리·반입 환경으로 확인된 경우에만 설정합니다. 체커가 `profile_fallback`을 반환하면 `null`일 때만 정상 적용이며, 객체가 있으면 검증 미완료입니다.
 
 L1 시제품은 빠른 결과물을 위해 축약 흐름을 사용합니다.
 
@@ -612,6 +614,31 @@ git clone https://github.com/Lex6won/vibecode-checker.git .\tools\vibecode-check
 
 ```powershell
 git -C .\tools\vibecode-checker pull origin main
+```
+
+MCP 설정은 클라이언트별로 다르게 읽힙니다.
+
+- 공통/Claude 계열 MCP 클라이언트: 루트 `.mcp.json`
+- Codex CLI/IDE: `.codex/config.toml` 또는 사용자 전역 `~/.codex/config.toml`
+- Claude Code 호환본: `.claude/.mcp.json`
+
+Codex 전역에 직접 등록하려면 다음 명령을 사용할 수 있습니다.
+
+```powershell
+codex mcp add vibecode-checker `
+  --env PYTHONUTF8=1 `
+  --env PYTHONIOENCODING=utf-8 `
+  -- gvskb-server
+```
+
+망분리·오프라인 환경으로 확인된 경우에만 offline 모드를 추가합니다.
+
+```powershell
+codex mcp add vibecode-checker `
+  --env PYTHONUTF8=1 `
+  --env PYTHONIOENCODING=utf-8 `
+  --env GVSKB_MODE=offline `
+  -- gvskb-server
 ```
 
 체커가 연결되어 있지 않으면 하네스는 다음을 안내합니다.

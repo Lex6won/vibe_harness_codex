@@ -49,6 +49,7 @@ quick에서 반드시 보는 안전장치는 아래로 제한한다.
 
 - Python/PyPI: `shared/enforcement/gvskb_gate.py check/install`
 - JavaScript/npm: `shared/enforcement/gvskb_gate.js check/install`
+- 단일 패키지 확인도 임시 manifest를 만들어 `audit_manifest` 기반으로 점검한다. `check_package_impl` 같은 이름 단위 단독 점검은 버전·manifest·기관 레지스트리 맥락이 빠질 수 있으므로 설치 게이트의 기준으로 쓰지 않는다.
 - npm 설치는 기본적으로 `--ignore-scripts`를 붙인다.
 - `verify-manifest`는 개발 중 확인용이며, 배포 전 제출 리포트를 대신하지 않는다.
 

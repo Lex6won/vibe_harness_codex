@@ -27,6 +27,8 @@ profile:
 
 adapters:
   codex: "AGENTS.md"
+  codex_project_config: ".codex/config.toml"
+  common_mcp_config: ".mcp.json"
   codex_adapter_note: "adapters/codex/AGENTS.md"
   claude_code_compatibility: "adapters/claude-code/CLAUDE.md"
   claude_code_generated_copy: ".claude/"

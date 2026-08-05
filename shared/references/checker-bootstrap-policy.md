@@ -9,12 +9,13 @@
 3. 둘 다 없으면 사용자에게 체커가 없음을 알리고 설치 여부를 확인한다.
 4. 사용자가 명시적으로 동의하기 전에는 GitHub clone, pip install, npm install, MCP 설정 변경을 하지 않는다.
 5. 설치 출처는 기본적으로 GitHub `https://github.com/Lex6won/vibecode-checker`만 사용한다.
-6. 망분리/offline 모드(`GVSKB_MODE=offline`)에서는 외부 GitHub clone을 시도하지 않는다. 외부망에서 받은 폴더를 반입해 로컬 경로로 지정하게 한다.
+6. 기본 모드는 online이다. 망분리/offline 환경으로 확인되어 `GVSKB_MODE=offline`을 명시한 경우에는 외부 GitHub clone을 시도하지 않는다. 외부망에서 받은 폴더를 반입해 로컬 경로로 지정하게 한다.
 7. 하네스 자체의 배포·업데이트 기준도 GitHub `https://github.com/Lex6won/vibe_harness_codex`다. 로컬 폴더는 작업 복사본이며, 기관별 차이는 우선 `shared/institution-profile.yaml`로 관리한다.
 8. 기본 하네스는 체커 내장 표준 프로파일(`dev-quick` 등)을 사용한다. 기관 고유 정책이 생기기 전에는 하네스가 별도 정책 사본을 MCP에 주입하지 않는다.
 9. 기관 고유 정책 때문에 `GVSKB_POLICIES_DIR`을 사용해야 하면 상대경로를 쓰지 말고 반드시 절대경로를 사용한다. MCP 서버의 작업 디렉터리는 사용자가 연 프로젝트 폴더일 수 있다.
 10. MCP 설정은 `gvskb mcp`가 아니라 `gvskb-server` 실행파일 또는 `python -m gvskb.server` 형식을 사용한다. Windows에서 `python`이 Microsoft Store 별칭이면 `gvskb-server`가 더 안전한 기본값이다.
-11. `.claude/.mcp.json`은 BOM 없는 UTF-8 JSON이어야 하며, `PYTHONUTF8=1`, `PYTHONIOENCODING=utf-8`, `GVSKB_MODE=offline`을 명시한다.
+11. 공통 MCP 설정은 루트 `.mcp.json`에 둔다. Claude Code 호환본은 `.claude/.mcp.json`을 둘 수 있으나 원본 기준은 아니다. Codex CLI/IDE는 `.codex/config.toml` 또는 사용자 전역 `~/.codex/config.toml`의 `[mcp_servers.vibecode-checker]`를 사용한다.
+12. MCP 설정은 BOM 없는 UTF-8이어야 하며, 기본 env는 `PYTHONUTF8=1`, `PYTHONIOENCODING=utf-8`이다. `GVSKB_MODE=offline`은 망분리·오프라인 환경에서만 추가한다.
 
 ## 2. 사용자 안내 문구
 
@@ -66,6 +67,25 @@ Python 패키지 설치까지 진행하려면 추가 확인 후 `--install-pytho
 
 ```powershell
 node .\shared\scripts\checker-bootstrap.mjs --target .\tools\vibecode-checker --yes --install-python
+```
+
+Codex CLI/IDE에서 전역 MCP 등록이 필요하면 다음 명령을 사용한다.
+
+```powershell
+codex mcp add vibecode-checker `
+  --env PYTHONUTF8=1 `
+  --env PYTHONIOENCODING=utf-8 `
+  -- gvskb-server
+```
+
+망분리·오프라인 환경으로 확인된 경우에만 다음처럼 `GVSKB_MODE=offline`을 추가한다.
+
+```powershell
+codex mcp add vibecode-checker `
+  --env PYTHONUTF8=1 `
+  --env PYTHONIOENCODING=utf-8 `
+  --env GVSKB_MODE=offline `
+  -- gvskb-server
 ```
 
 ## 5. 기록 항목
