@@ -6,7 +6,7 @@
     "release full checker reports",
     "submit two final reports",
     "GitHub canonical source",
-    "Python or JavaScript implementation only",
+    "Python, JavaScript, or TypeScript implementation only",
     "package replacement before exception",
     "checker bootstrap requires user confirmation",
     "quick uses dev-quick checker profile",

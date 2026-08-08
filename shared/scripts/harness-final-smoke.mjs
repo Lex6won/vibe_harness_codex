@@ -74,7 +74,7 @@ requireText("AGENTS.md", [
   "profile_fallback",
   "https://github.com/Lex6won/vibe_harness_codex",
   "https://github.com/Lex6won/vibecode-checker",
-  "Python or JavaScript",
+  "Python, JavaScript, or TypeScript",
   "coaching-messages.md",
   "gvskb_gate.py",
   "gvskb_gate.js",
@@ -199,8 +199,6 @@ requireText("shared/enforcement/gvskb_gate.js", [
 ]);
 
 const disallowedImplementationExtensions = new Set([
-  ".ts",
-  ".tsx",
   ".java",
   ".go",
   ".php",

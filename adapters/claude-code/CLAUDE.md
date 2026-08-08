@@ -8,7 +8,7 @@
 
 핵심 규칙:
 
-- 기능 구현은 Python 또는 JavaScript로만 한다.
+- 기능 구현은 Python, JavaScript, TypeScript로만 한다.
 - 패키지 판정은 `vibecode-checker/gvskb` verdict를 집행한다.
 - 하네스는 일반 패키지 결정을 위해 레지스트리를 직접 호출하지 않는다.
 - `malicious`, `registry_rejected`, `not_found`, `in_kev=true`는 모든 mode에서 차단한다.

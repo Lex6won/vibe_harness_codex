@@ -17,7 +17,7 @@ tracks:
     denied: [public]
   react-fastapi:
     platform_track: B
-    stack: React Vite JavaScript static + FastAPI
+    stack: React Vite JavaScript/TypeScript static + FastAPI
     templates: [gg-spa]
     allowed: [internal, public-with-review]
   node-api:

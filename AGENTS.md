@@ -49,8 +49,8 @@ The `.claude/` directory is a Claude Code compatibility copy. Do not treat it as
 - Use `shared/references/runtime-selection-policy.yaml` to recommend language/framework/DBMS from server size, OS, DBMS, exposure, and service type. Do not ask the user to choose a programming language when policy can decide safely.
 - Use `shared/references/lifecycle-quality-gates.yaml` to keep idea, design, implementation, test, and release work proportional to maturity level.
 - Use `shared/references/harness-enforcement-contract.yaml` before package installation, dependency changes, source checks, and release handoff. The harness enforces checker verdicts; it does not become the checker or registry.
-- Before adding or changing Python/npm packages, use the package gate: `shared/enforcement/gvskb_gate.py` for PyPI and `shared/enforcement/gvskb_gate.js` for npm. Direct `pip install` or `npm install` for new packages is not the normal harness path.
-- Implement functional code only in Python or JavaScript/Node tracks allowed by `shared/institution-profile.yaml`. If the user asks for another implementation language, mark it needs-review and suggest an approved Python or JavaScript path.
+- Before adding or changing Python, JavaScript, or TypeScript packages, use the package gate: `shared/enforcement/gvskb_gate.py` for PyPI and `shared/enforcement/gvskb_gate.js` for npm. Direct `pip install`, `npm install`, `pnpm add`, or `yarn add` for new packages is a harness bypass and must be rerouted through the gate first.
+- Implement functional code only in Python, JavaScript, or TypeScript tracks allowed by `shared/institution-profile.yaml`. TypeScript is allowed because `vibecode-checker` scans `.ts` and `.tsx`; TypeScript package changes still use the npm gate.
 - Use `shared/references/package-governance.yaml` for package status, review workflow, and future platform handoff. `vibecode-checker` / `gvskb` provides the single package/security verdict that the harness enforces; final approval belongs to a human reviewer, registry service, or package governance platform.
 - Use `shared/references/package-alternatives.yaml` before package exceptions. If a package is denied, unknown, or risky, propose a safe replacement or no-new-package implementation path before stopping.
 - Use `shared/references/trusted-registry-integration.yaml` for the checker-mediated registry contract. Do not call a registry service directly for normal package decisions; call `vibecode-checker` / `gvskb`, which returns the registry-backed verdict fields.
@@ -64,7 +64,7 @@ The `.claude/` directory is a Claude Code compatibility copy. Do not treat it as
 - Use `shared/golden-templates/` as the starting point for implementation. Do not create an arbitrary stack outside an approved track.
 - Apply checker effort proportionally: quick during coding for risky changes only, standard after implementation completion, and full before deployment/security/AX submission.
 - Use checker built-in profiles by default: quick maps to `dev-quick`. Do not rely on relative `GVSKB_POLICIES_DIR`; custom policy directories must be absolute. After `scan_path`, verify that the returned/applied checker profile matches the requested checker profile, or mark validation incomplete.
-- The checker MCP command must be `gvskb-server` or `python -m gvskb.server`, never `gvskb mcp`. The common MCP config is root `.mcp.json`; Codex CLI/IDE config is `.codex/config.toml` or the user's `~/.codex/config.toml`. Do not hard-code `GVSKB_MODE=offline`; set it only for confirmed air-gapped/offline environments. If checker output includes non-null `profile_fallback`, mark validation incomplete.
+- The checker MCP command must be `gvskb-server` or `python -m gvskb.server`, never `gvskb mcp`. ChatGPT desktop Codex, Codex CLI, and Codex IDE share `.codex/config.toml` or the user's `~/.codex/config.toml`. Claude Code reads root `.mcp.json` and may use `.claude/.mcp.json` as a compatibility copy. Claude Desktop does not automatically share Claude Code settings; use a Desktop Extension or `.mcpb` package. Do not hard-code `GVSKB_MODE=offline`; set it only for confirmed air-gapped/offline environments. If checker output includes non-null `profile_fallback`, mark validation incomplete.
 - Keep `network_profile` separate from checker profiles. `admin-network`, `dmz-public`, and `internet-prototype` are network/deployment classifications, not values for `scan_path(profile=...)`.
 - For release readiness, the default final submission is exactly the two files saved by `vibecode-checker`: the human HTML report and the JSON evidence report. Tell the user these two final reports must be submitted to the security team or AX team. Extra deployment forms are conditional.
 - Keep generated work inside `_workspace/`, `_workspace/source/`, or `dist/` unless the user explicitly asks otherwise.
@@ -109,7 +109,7 @@ For package governance, the checker is the only normal integration point. The re
 For package installation, the executable guardrail is:
 
 - Python/PyPI: `python shared/enforcement/gvskb_gate.py check <package> --ecosystem pypi`, then `install` only when not blocked.
-- JavaScript/npm: `node shared/enforcement/gvskb_gate.js check <package>`, then `install` only when not blocked.
+- JavaScript/TypeScript npm: `node shared/enforcement/gvskb_gate.js check <package>`, then `install` only when not blocked.
 - npm install through the gate adds `--ignore-scripts` by default. Use `--allow-scripts` only when an approved template or reviewer condition requires it.
 - Manifest checks through `verify-manifest` are development evidence only. Final submission remains the two checker-saved full reports.
 

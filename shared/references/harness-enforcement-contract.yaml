@@ -38,9 +38,11 @@ implementation_language_policy:
   allowed_function_implementation_languages:
     - python
     - javascript
+    - typescript
   allowed_runtimes:
     python: "CPython versions declared in shared/institution-profile.yaml"
     javascript: "Node.js versions declared in shared/institution-profile.yaml, plus browser JavaScript for approved React/Vite frontend tracks"
+    typescript: "TypeScript source compiled by the approved Node.js toolchain; checker scans .ts and .tsx source"
   not_allowed_without_exception:
     - java
     - kotlin
@@ -52,8 +54,8 @@ implementation_language_policy:
     - dart
     - swift
     - native_binary_runtime
-  typescript_policy: "Do not create TypeScript implementation source by default. TypeScript may appear only as a build-time compatibility/tooling exception when the institution profile explicitly allows it."
-  enforcement_rule: "If a requested implementation needs a non-Python/non-JavaScript language, mark needs-review and suggest an approved Python or JavaScript track instead."
+  typescript_policy: "TypeScript is an approved implementation source for approved React/Vite and Node tracks. TypeScript dependency changes are npm ecosystem changes and must pass the npm package gate."
+  enforcement_rule: "If a requested implementation needs a non-Python/non-JavaScript/non-TypeScript language, mark needs-review and suggest an approved Python, JavaScript, or TypeScript track instead."
 
 checker_call_contract:
   registry_access: "checker-mediated-only"
@@ -66,11 +68,13 @@ checker_call_contract:
     profile_fallback_rule: "If checker returns non-null profile_fallback, treat the scan as fallback evidence only and mark security validation incomplete."
     mcp_command_rule: "Use gvskb-server or python -m gvskb.server; gvskb mcp is invalid."
     mcp_json_encoding_rule: "Root .mcp.json and compatibility MCP JSON files must be UTF-8 without BOM and include PYTHONUTF8=1, PYTHONIOENCODING=utf-8. GVSKB_MODE=offline is allowed only for confirmed air-gapped/offline environments."
-    codex_mcp_config_rule: "Codex CLI/IDE reads .codex/config.toml or user-level ~/.codex/config.toml [mcp_servers.*], not .mcp.json."
+    codex_mcp_config_rule: "ChatGPT desktop Codex, Codex CLI, and Codex IDE read .codex/config.toml or user-level ~/.codex/config.toml [mcp_servers.*], not .mcp.json."
+    claude_desktop_config_rule: "Claude Desktop does not automatically share Claude Code project MCP settings; connect it with Desktop Extension or .mcpb packaging."
   normal_path:
     - "For package decisions, call vibecode-checker/gvskb; do not call registry directly."
     - "For new PyPI packages, use shared/enforcement/gvskb_gate.py check/install before pip install."
     - "For new npm packages, use shared/enforcement/gvskb_gate.js check/install before npm install; default to --ignore-scripts."
+    - "For JavaScript and TypeScript dependency changes, direct npm/pnpm/yarn installs are harness bypasses unless the checker gate has passed first."
     - "Package gates must call audit_manifest, including for single package checks converted into temporary manifests, so version, manifest, and registry-backed context are preserved."
     - "Use verify-manifest for development-time manifest checks; this is not a final release report."
     - "Use scan_dependencies for manifest/lockfile decisions and package-oriented gates."

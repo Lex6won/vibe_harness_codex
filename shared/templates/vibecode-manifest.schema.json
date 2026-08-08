@@ -33,7 +33,7 @@
         "registry_access": {"enum": ["checker-mediated-only", "not-configured", "unknown"]},
         "implementation_languages": {
           "type": "array",
-          "items": {"enum": ["python", "javascript"]}
+          "items": {"enum": ["python", "javascript", "typescript"]}
         },
         "checker_verdict_summary": {"type": "object"},
         "registry_status": {"type": "object"},

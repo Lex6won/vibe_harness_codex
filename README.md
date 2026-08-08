@@ -92,7 +92,7 @@ shared/references/package-denylist.yaml
 
 - 개발환경: 개발 PC/개발망, 인터넷 접근, 패키지 설치 방식, 개발용 DBMS
 - 운영환경: 운영망/DMZ, OS, 컨테이너 런타임, 설치 경로, healthcheck, 로그
-- 기술 제한: Python/JavaScript(Node.js) 허용 언어와 버전, PostgreSQL/SQLite 등 DBMS 허용 범위
+- 기술 제한: Python/JavaScript/TypeScript(Node.js) 허용 언어와 버전, PostgreSQL/SQLite 등 DBMS 허용 범위
 - 플러그인/MCP: Codex, Claude Code, Lovable, GitHub, 문서 연동, `vibecode-checker` 사용 정책
 - 라이브러리: 공통 승인 패키지 외 기관별 추가 허용/제한/차단 목록
 - 서버 프로파일: small/standard/large_or_special 등 CPU·메모리 기준과 권장 서비스 유형
@@ -113,7 +113,7 @@ shared/references/package-denylist.yaml
 shared/references/runtime-selection-policy.yaml
 ```
 
-예를 들어 내부 대시보드는 작은 서버에서 Streamlit/Python 후보가 우선이고, 파일 업로드나 내부 CRUD 웹은 Nginx + FastAPI + PostgreSQL 후보가 우선입니다. React가 필요한 경우에도 구현 소스는 JavaScript로 제한하고, Node.js는 운영 런타임이라기보다 정적 빌드 도구로 다루며, 운영은 Nginx 정적 파일 + 승인 백엔드 구조를 우선합니다.
+예를 들어 내부 대시보드는 작은 서버에서 Streamlit/Python 후보가 우선이고, 파일 업로드나 내부 CRUD 웹은 Nginx + FastAPI + PostgreSQL 후보가 우선입니다. React가 필요한 경우 구현 소스는 JavaScript 또는 TypeScript로 작성할 수 있고, Node.js는 운영 런타임이라기보다 정적 빌드 도구로 다루며, 운영은 Nginx 정적 파일 + 승인 백엔드 구조를 우선합니다.
 
 AI 도구가 공통으로 읽을 하네스 선언은 아래 파일에 있습니다.
 
@@ -134,13 +134,26 @@ shared/harness.yaml
 
 `.claude/`는 Claude Code가 바로 읽을 수 있게 둔 호환본입니다. Claude가 별도 하네스를 관리한다면 이 저장소의 `.claude/`는 참고용으로만 보고, Codex 하네스의 원본 기준으로 보지 않습니다.
 
+## AI 도구별 연결 기준
+
+하네스 내용은 공통이지만, AI 도구마다 설정을 읽는 위치가 다릅니다. 설치 화면과 문서에서는 다음 기준으로 안내합니다.
+
+| 선택 항목 | 연결 기준 | 설명 |
+| --- | --- | --- |
+| ChatGPT 데스크톱 · Codex | `~/.codex/config.toml` 또는 프로젝트 `.codex/config.toml` | ChatGPT 데스크톱의 Codex, Codex CLI, Codex IDE 확장은 Codex MCP 설정을 공유한다. 한 번 등록하면 같은 Codex 설정 계층에서 함께 사용한다. |
+| Claude Code | 루트 `.mcp.json`, 필요 시 `.claude/CLAUDE.md` | Claude Code에서 프로젝트 단위로 하네스와 체커 MCP를 사용한다. `.claude/`는 Claude Code 호환본이며 Codex 원본 기준은 아니다. |
+| Claude Desktop | Desktop Extension 또는 `.mcpb` 패키지 | 로컬 파일·프로세스에 접근하는 Claude Desktop 연결은 Claude Code 설정과 자동으로 같아지지 않는다. 별도 데스크톱 확장 설치 흐름으로 안내한다. |
+| Lovable | `adapters/lovable` | Lovable 산출물을 하네스 기준으로 정렬하고, 제출 전 체커 점검 흐름에 맞춘다. |
+
+ChatGPT 웹은 로컬 Codex 설정 파일을 직접 읽지 않는다. 웹에서 쓰는 원격 커넥터나 플러그인은 별도 배포·승인 흐름으로 다룬다.
+
 ## 전체 구조
 
 ```text
 vibe_harness_codex/
 ├── AGENTS.md                         # Codex 최상위 진입점
-├── .codex/config.toml                # Codex CLI/IDE용 프로젝트 MCP 설정
-├── .mcp.json                         # 공통 MCP 설정
+├── .codex/config.toml                # ChatGPT 데스크톱·Codex CLI/IDE용 프로젝트 MCP 설정
+├── .mcp.json                         # Claude Code 등 공통 MCP 클라이언트용 설정
 ├── shared/
 │   ├── institution-profile.yaml      # 기관별 단일 설정 파일
 │   ├── harness.yaml                  # 도구 중립 하네스 선언
@@ -208,7 +221,7 @@ quick/standard/full은 하네스 단계 이름이고, 실제 체커 호출에는
 
 예를 들어 `dev-quick`을 요청했는데 현재 설치된 체커가 이를 알 수 없는 프로파일로 보고 `public-default-strict`로 대체했다면, quick 점검은 완료된 것이 아닙니다. GitHub 기준 최신 체커로 갱신하거나 기관 정책 경로를 절대경로로 바로잡은 뒤 다시 확인해야 합니다.
 
-체커 MCP 설정은 `gvskb mcp`가 아니라 `gvskb-server` 또는 `python -m gvskb.server`로 실행해야 합니다. Windows에서 `python`이 Microsoft Store 별칭인 경우가 있으므로 기본 배포 설정은 `gvskb-server`를 사용합니다. 공통 MCP 설정은 루트 `.mcp.json`에 두고, Codex CLI/IDE는 `.codex/config.toml` 또는 사용자 전역 `~/.codex/config.toml`의 `[mcp_servers.vibecode-checker]`를 사용합니다. `GVSKB_MODE=offline`은 기본값이 아니며, 망분리·반입 환경으로 확인된 경우에만 설정합니다. 체커가 `profile_fallback`을 반환하면 `null`일 때만 정상 적용이며, 객체가 있으면 검증 미완료입니다.
+체커 MCP 설정은 `gvskb mcp`가 아니라 `gvskb-server` 또는 `python -m gvskb.server`로 실행해야 합니다. Windows에서 `python`이 Microsoft Store 별칭인 경우가 있으므로 기본 배포 설정은 `gvskb-server`를 사용합니다. ChatGPT 데스크톱의 Codex, Codex CLI, Codex IDE 확장은 `.codex/config.toml` 또는 사용자 전역 `~/.codex/config.toml`의 `[mcp_servers.vibecode-checker]`를 공유합니다. Claude Code는 루트 `.mcp.json`을 사용하고, Claude Desktop은 Desktop Extension 또는 `.mcpb` 패키지로 별도 연결합니다. `GVSKB_MODE=offline`은 기본값이 아니며, 망분리·반입 환경으로 확인된 경우에만 설정합니다. 체커가 `profile_fallback`을 반환하면 `null`일 때만 정상 적용이며, 객체가 있으면 검증 미완료입니다.
 
 L1 시제품은 빠른 결과물을 위해 축약 흐름을 사용합니다.
 
@@ -518,7 +531,7 @@ shared/references/network-profile.yaml
 
 역할은 이렇게 나눕니다.
 
-1. 레지스트리 서비스: Python(PyPI)과 JavaScript/npm 패키지의 허용·불허·보류·조건부 승인 목록을 관리한다.
+1. 레지스트리 서비스: Python(PyPI)과 JavaScript/TypeScript(npm) 패키지의 허용·불허·보류·조건부 승인 목록을 관리한다.
 2. `vibecode-checker/gvskb`: 레지스트리 결정, 취약점, 악성 패키지, cooldown, 캐시 신선도를 합쳐 단일 `verdict`를 반환한다.
 3. 하네스: `verdict`를 받아 설치·사용·배포 이관을 pass/warn/block으로 제한한다.
 
@@ -533,7 +546,7 @@ python .\shared\enforcement\gvskb_gate.py check requests --ecosystem pypi
 # 확인 후 pip install
 python .\shared\enforcement\gvskb_gate.py install requests --ecosystem pypi
 
-# JavaScript/npm 단일 패키지 확인
+# JavaScript/TypeScript npm 단일 패키지 확인
 node .\shared\enforcement\gvskb_gate.js check axios
 
 # 확인 후 npm install, 기본값은 --ignore-scripts
@@ -544,7 +557,7 @@ python .\shared\enforcement\gvskb_gate.py verify-manifest .\requirements.txt --e
 node .\shared\enforcement\gvskb_gate.js verify-manifest .\package.json
 ```
 
-Windows에서 `python`이 Microsoft Store 별칭이면 실제 Python 경로를 지정합니다.
+하네스 경로에서 새 패키지를 추가하거나 버전을 바꿀 때는 위 게이트가 필수입니다. TypeScript 개발에 필요한 npm 패키지도 `gvskb_gate.js`를 통과한 뒤 설치합니다. Windows에서 `python`이 Microsoft Store 별칭이면 실제 Python 경로를 지정합니다.
 
 ```powershell
 $env:GVSKB_GATE_PYTHON="C:\Python313\python.exe"
@@ -618,9 +631,10 @@ git -C .\tools\vibecode-checker pull origin main
 
 MCP 설정은 클라이언트별로 다르게 읽힙니다.
 
-- 공통/Claude 계열 MCP 클라이언트: 루트 `.mcp.json`
-- Codex CLI/IDE: `.codex/config.toml` 또는 사용자 전역 `~/.codex/config.toml`
-- Claude Code 호환본: `.claude/.mcp.json`
+- ChatGPT 데스크톱의 Codex, Codex CLI, Codex IDE 확장: `.codex/config.toml` 또는 사용자 전역 `~/.codex/config.toml`
+- Claude Code: 루트 `.mcp.json`, 필요 시 `.claude/.mcp.json`
+- Claude Desktop: Desktop Extension 또는 `.mcpb` 패키지로 별도 연결
+- ChatGPT 웹: 로컬 Codex 설정 파일을 직접 읽지 않으며, 원격 커넥터·플러그인은 별도 승인 흐름을 사용
 
 Codex 전역에 직접 등록하려면 다음 명령을 사용할 수 있습니다.
 

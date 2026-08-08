@@ -1,7 +1,7 @@
 package_governance_version: 2
 
 purpose:
-  - "Define how Python(PyPI) and JavaScript/npm package decisions flow through the harness."
+  - "Define how Python(PyPI) and JavaScript/TypeScript(npm) package decisions flow through the harness."
   - "Ensure blocked or uncertain packages do not stop development without a safe replacement path."
   - "Prepare for a package registry platform while keeping the harness dependent only on checker verdicts."
 
@@ -66,7 +66,7 @@ ecosystems:
     - composer
     - rubygems
     - pub
-  note: "Functional implementation must stay in Python or JavaScript. Other package ecosystems imply an unapproved runtime/language unless explicitly excepted by the institution."
+  note: "Functional implementation must stay in Python, JavaScript, or TypeScript. Other package ecosystems imply an unapproved runtime/language unless explicitly excepted by the institution."
 
 statuses:
   core: "Golden-template dependency; allowed only while checker verdict does not block."
@@ -164,7 +164,7 @@ replacement_rules:
     - feature_impact
     - residual_risk
     - review_or_exception_needed
-  coding_rule: "Do not install the risky package first and replace later; replace or stop before dependency installation."
+  coding_rule: "Do not install the risky package first and replace later. New PyPI and npm packages, including TypeScript tooling and libraries, must pass the checker gate before dependency installation or version change."
 
 required_evidence:
   - package_name

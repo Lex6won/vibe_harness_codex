@@ -14,7 +14,7 @@
 8. 기본 하네스는 체커 내장 표준 프로파일(`dev-quick` 등)을 사용한다. 기관 고유 정책이 생기기 전에는 하네스가 별도 정책 사본을 MCP에 주입하지 않는다.
 9. 기관 고유 정책 때문에 `GVSKB_POLICIES_DIR`을 사용해야 하면 상대경로를 쓰지 말고 반드시 절대경로를 사용한다. MCP 서버의 작업 디렉터리는 사용자가 연 프로젝트 폴더일 수 있다.
 10. MCP 설정은 `gvskb mcp`가 아니라 `gvskb-server` 실행파일 또는 `python -m gvskb.server` 형식을 사용한다. Windows에서 `python`이 Microsoft Store 별칭이면 `gvskb-server`가 더 안전한 기본값이다.
-11. 공통 MCP 설정은 루트 `.mcp.json`에 둔다. Claude Code 호환본은 `.claude/.mcp.json`을 둘 수 있으나 원본 기준은 아니다. Codex CLI/IDE는 `.codex/config.toml` 또는 사용자 전역 `~/.codex/config.toml`의 `[mcp_servers.vibecode-checker]`를 사용한다.
+11. ChatGPT 데스크톱의 Codex, Codex CLI, Codex IDE 확장은 `.codex/config.toml` 또는 사용자 전역 `~/.codex/config.toml`의 `[mcp_servers.vibecode-checker]`를 공유한다. Claude Code는 루트 `.mcp.json`을 사용하고, Claude Code 호환본은 `.claude/.mcp.json`을 둘 수 있으나 원본 기준은 아니다. Claude Desktop은 Claude Code 설정과 자동으로 같아지지 않으므로 Desktop Extension 또는 `.mcpb` 패키지로 별도 연결한다.
 12. MCP 설정은 BOM 없는 UTF-8이어야 하며, 기본 env는 `PYTHONUTF8=1`, `PYTHONIOENCODING=utf-8`이다. `GVSKB_MODE=offline`은 망분리·오프라인 환경에서만 추가한다.
 
 ## 2. 사용자 안내 문구

@@ -29,11 +29,12 @@ harness_enforcement:
     allowed_function_implementation_languages:
       - python
       - javascript
+      - typescript
     allowed_runtimes:
       python: ["3.12"]
       node: ["20.19+"]
-    typescript_default: "not-allowed-as-implementation-source"
-    non_python_javascript_request: "needs-review-and-approved-track-rewrite"
+    typescript_policy: "allowed as implementation source for approved React/Vite and Node tracks; compile/check through the approved Node.js toolchain"
+    non_python_javascript_typescript_request: "needs-review-and-approved-track-rewrite"
   env_grade_defaults:
     personal_pc_harness: E1
     internal_server_or_ci: E2
@@ -95,6 +96,7 @@ environment:
     allowed_languages:
       python: ["3.12"]
       node: ["20.19+"]
+      typescript: ["5.x via approved Node.js toolchain"]
     allowed_dbms:
       sqlite:
         versions: ["3"]
@@ -121,6 +123,7 @@ environment:
     allowed_languages:
       python: ["3.12"]
       node: ["20.19+"]
+      typescript: ["compiled artifacts only; runtime remains approved Node.js or static browser JavaScript"]
     allowed_dbms:
       postgresql:
         versions: ["16"]

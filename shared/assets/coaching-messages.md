@@ -17,7 +17,7 @@
 ```
 
 ```text
-기관 운영환경 기준으로는 Python/JavaScript 승인 Track 안에서 구현해야 합니다.
+기관 운영환경 기준으로는 Python/JavaScript/TypeScript 승인 Track 안에서 구현해야 합니다.
 기술 선택은 제가 정책에 맞춰 정하고, 필요한 부분만 확인드리겠습니다.
 ```
 

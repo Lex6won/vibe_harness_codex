@@ -79,6 +79,8 @@ enforcement:
       - "dependency version change"
       - "requirements.txt/package.json/lockfile dependency change"
     npm_default: "--ignore-scripts"
+    force_gate: true
+    bypass_rule: "Direct pip/npm/pnpm/yarn package installs are harness bypasses; reroute through the checker gate before install or version change."
     final_submission_impact: "none; release submission remains checker HTML + JSON reports"
   checker_profile_policy:
     default_source: "vibecode-checker built-in profiles"
@@ -89,6 +91,7 @@ enforcement:
   implementation_languages:
     - "python"
     - "javascript"
+    - "typescript"
   absolute_block_verdicts:
     - "malicious"
     - "registry_rejected"

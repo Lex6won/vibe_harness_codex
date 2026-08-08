@@ -14,11 +14,13 @@ implementation_language_policy:
   allowed_function_implementation_languages:
     - python
     - javascript
+    - typescript
   allowed_runtime_labels:
     python: "Python/FastAPI/Streamlit/local automation"
     javascript: "Node.js API or browser JavaScript frontend build served by nginx"
-  typescript_default: "not an implementation language; use only when institution explicitly allows build-time tooling"
-  decision_rule: "If a requested stack requires another implementation language, convert it to an approved Python or JavaScript track or mark needs-review."
+    typescript: "TypeScript source compiled through the approved Node.js toolchain; runtime remains Node.js or browser JavaScript"
+  typescript_policy: "allowed for approved React/Vite and Node tracks because vibecode-checker scans .ts and .tsx"
+  decision_rule: "If a requested stack requires another implementation language, convert it to an approved Python, JavaScript, or TypeScript track or mark needs-review."
 
 server_profiles:
   small:
@@ -79,7 +81,7 @@ recommendations:
 
   static_spa:
     preferred_track: react-fastapi
-    frontend_language: javascript
+    frontend_language: javascript-or-typescript
     frontend_framework: react-vite
     backend_language: python
     backend_framework: fastapi
@@ -89,7 +91,7 @@ recommendations:
 
   node_api:
     preferred_track: node-api
-    language: javascript
+    language: javascript-or-typescript
     framework: express
     dbms: postgresql
     server_profile: standard
@@ -108,8 +110,8 @@ decision_rules:
   - "If persistent shared data is required, use production DBMS from institution-profile.yaml; default to PostgreSQL when allowed."
   - "If public/citizen access exists, do not use streamlit-internal."
   - "If the frontend is React, Node is allowed for build tooling; production runtime should remain nginx/static plus approved backend."
-  - "Write functional source in Python or JavaScript only. Do not create TypeScript, Java, Go, PHP, Ruby, C#, Rust, or native-runtime implementation unless the institution grants an exception."
-  - "If the frontend is React, Node is allowed for JavaScript build tooling; production runtime should remain nginx/static plus approved backend."
+  - "Write functional source in Python, JavaScript, or TypeScript only. Do not create Java, Go, PHP, Ruby, C#, Rust, or native-runtime implementation unless the institution grants an exception."
+  - "If the frontend is React, Node is allowed for JavaScript/TypeScript build tooling; production runtime should remain nginx/static plus approved backend."
   - "If requested language is not in institution-profile.yaml, mark as needs-review and suggest an approved track."
   - "If server profile cannot support the requested runtime, mark as needs-user or needs-operations-review."
 
