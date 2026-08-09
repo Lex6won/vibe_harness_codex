@@ -28,6 +28,7 @@ Check-File (Join-Path $rootPath "shared\templates\harness.schema.json") "harness
 Check-File (Join-Path $rootPath "shared\references\permission-model.yaml") "permission model"
 Check-File (Join-Path $rootPath "shared\references\runtime-selection-policy.yaml") "runtime selection policy"
 Check-File (Join-Path $rootPath "shared\references\lifecycle-quality-gates.yaml") "lifecycle quality gates"
+Check-File (Join-Path $rootPath "shared\references\core-process-enforcement.yaml") "core process enforcement"
 Check-File (Join-Path $rootPath "shared\references\harness-enforcement-contract.yaml") "harness enforcement contract"
 Check-File (Join-Path $rootPath "shared\references\package-governance.yaml") "package governance"
 Check-File (Join-Path $rootPath "shared\references\package-alternatives.yaml") "package alternatives"
@@ -80,7 +81,7 @@ if (Test-Path -LiteralPath $institutionProfile) {
   if ($profile -notmatch [regex]::Escape("https://github.com/Lex6won/vibecode-checker")) { Fail "institution-profile.yaml must declare canonical checker GitHub repository" }
   if ($profile -notmatch "production:\s*\r?\n\s+server:") { Fail "institution-profile.yaml must define production.server" }
   if ($profile -notmatch "development:\s*\r?\n\s+server:") { Fail "institution-profile.yaml must define development.server" }
-  if ($profile -notmatch "allowed_function_implementation_languages:\s*\r?\n\s+- python\s*\r?\n\s+- javascript") { Fail "institution-profile.yaml must limit implementation languages to python and javascript" }
+  if ($profile -notmatch "allowed_function_implementation_languages:\s*\r?\n\s+- python\s*\r?\n\s+- javascript\s*\r?\n\s+- typescript") { Fail "institution-profile.yaml must limit implementation languages to python, javascript, and typescript" }
   if ($profile -notmatch "registry_access:\s*`"checker-mediated-only`"") { Fail "institution-profile.yaml must declare checker-mediated registry access" }
   if ($profile -notmatch "default_mode:\s*MONITOR") { Fail "institution-profile.yaml must default enforcement mode to MONITOR during registry rollout" }
   if ($profile -notmatch "checker_bootstrap:") { Fail "institution-profile.yaml must declare checker bootstrap policy" }
@@ -105,6 +106,17 @@ if (Test-Path -LiteralPath $enforcementContract) {
   }
   foreach ($marker in @("gvskb_gate.py", "gvskb_gate.js", "--ignore-scripts", "verify-manifest")) {
     if ($contractText -notmatch [regex]::Escape($marker)) { Fail "harness-enforcement-contract.yaml missing package gate marker: $marker" }
+  }
+  foreach ($marker in @("core_process_enforcement:", "implementation_completion_rule", "scenario_test_rule", "health_check_boundary", "guard_rule")) {
+    if ($contractText -notmatch [regex]::Escape($marker)) { Fail "harness-enforcement-contract.yaml missing core process marker: $marker" }
+  }
+}
+
+$coreProcess = Join-Path $rootPath "shared\references\core-process-enforcement.yaml"
+if (Test-Path -LiteralPath $coreProcess) {
+  $coreText = Get-Content -LiteralPath $coreProcess -Encoding UTF8 -Raw
+  foreach ($marker in @("core_process_enforcement_version:", "implementation_first:", "mandatory_processes:", "service_implementation:", "scenario_test:", "security_check:", "package_gate:", "release_submission:", "recording_requirements:", "guard_command:", "block_when:", "health_only_is_not_user_scenario", "clickable_controls_are_user_flow", "button_link_contract_test_for_user_facing_pages")) {
+    if ($coreText -notmatch [regex]::Escape($marker)) { Fail "core-process-enforcement.yaml missing required marker: $marker" }
   }
 }
 
@@ -151,6 +163,9 @@ if (Test-Path -LiteralPath $lifecycleGates) {
   foreach ($marker in @("checker_profiles:", "quick:", "standard:", "full:", "two_report_release_default", "full_checker_html_and_json_saved", "user_notice.final_reports_must_be_submitted")) {
     if ($lifecycleText -notmatch [regex]::Escape($marker)) { Fail "lifecycle-quality-gates.yaml missing final harness marker: $marker" }
   }
+  foreach ($marker in @("working_software_over_document_only", "service_runs_or_static_site_opens", "guard_command_defined_or_equivalent", "user_scenario_test_recorded", "button_link_contract_test_recorded_for_user_facing_pages", "scenario_test_missing_for_user_facing_service", "health_only_when_user_flow_exists", "broken_button_or_link_target", "implementation_claim_without_runnable_service")) {
+    if ($lifecycleText -notmatch [regex]::Escape($marker)) { Fail "lifecycle-quality-gates.yaml missing core process gate marker: $marker" }
+  }
 }
 
 $packageAlternatives = Join-Path $rootPath "shared\references\package-alternatives.yaml"
@@ -180,6 +195,7 @@ if (Test-Path -LiteralPath $harness) {
   if ($harnessText -notmatch "institution-profile.yaml") { Fail "harness.yaml must point to shared/institution-profile.yaml" }
   if ($harnessText -notmatch "permission-model.yaml") { Fail "harness.yaml must point to permission-model.yaml" }
   if ($harnessText -notmatch "runtime-selection-policy.yaml") { Fail "harness.yaml must point to runtime-selection-policy.yaml" }
+  if ($harnessText -notmatch "core-process-enforcement.yaml") { Fail "harness.yaml must point to core-process-enforcement.yaml" }
   if ($harnessText -notmatch "package-governance.yaml") { Fail "harness.yaml must point to package-governance.yaml" }
   if ($harnessText -notmatch "harness-enforcement-contract.yaml") { Fail "harness.yaml must point to harness-enforcement-contract.yaml" }
   if ($harnessText -notmatch "checker-bootstrap-policy.md") { Fail "harness.yaml must point to checker-bootstrap-policy.md" }
@@ -203,7 +219,7 @@ if (Test-Path -LiteralPath $harness) {
   if ($harnessText -notmatch "checker-bootstrap.mjs") { Fail "harness.yaml must point to checker-bootstrap.mjs" }
   if ($harnessText -notmatch "package-catalog-export.mjs") { Fail "harness.yaml must point to package-catalog-export.mjs" }
   if ($harnessText -notmatch "harness-final-smoke.mjs") { Fail "harness.yaml must point to harness-final-smoke.mjs" }
-  if ($harnessText -notmatch "implementation_languages:\s*\r?\n\s+- `"python`"\s*\r?\n\s+- `"javascript`"") { Fail "harness.yaml must declare python/javascript implementation languages" }
+  if ($harnessText -notmatch "implementation_languages:\s*\r?\n\s+- `"python`"\s*\r?\n\s+- `"javascript`"\s*\r?\n\s+- `"typescript`"") { Fail "harness.yaml must declare python/javascript/typescript implementation languages" }
   if ($harnessText -notmatch "safe_outputs:") { Fail "harness.yaml must declare safe_outputs" }
 }
 

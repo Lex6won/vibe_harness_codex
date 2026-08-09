@@ -41,6 +41,7 @@ Claude 하네스가 빠르게 시제품을 만들기 좋은 현장 실행형이�
 5. 위험한 패키지·플러그인·외부서비스가 막히더라도 승인된 대체 패키지나 대체 구현 경로를 제시한다.
 6. 개발 중에는 가볍게, 배포·이관 시에는 엄격하게 산출물을 만든다.
 7. 운영팀·보안팀이 이어받을 수 있도록 필요한 최소 증적을 남긴다. 배포 전 기본 제출은 체커 HTML/JSON 리포트 2종이며, 배포가이드와 신청서는 조건부다.
+8. 구현 요청에서는 실행 가능한 서비스와 사용자 시나리오 검증을 남긴다. 설계 문서, README 수정, 체커 결과, 하네스 검증만으로는 구현 완료가 아니다.
 
 즉, 이 하네스는 **공무원 친화적인 업무 구상 경험**과 **공공 운영에 필요한 절차·증거 체인**을 동시에 만족시키기 위한 실행 구조입니다.
 
@@ -62,6 +63,7 @@ Claude 하네스가 빠르게 시제품을 만들기 좋은 현장 실행형이�
 | 벤더 중립 선언 파일 | `shared/harness.yaml` |
 | 런타임 선택 정책 | `shared/references/runtime-selection-policy.yaml` |
 | 생명주기 품질 게이트 | `shared/references/lifecycle-quality-gates.yaml` |
+| 핵심 과정 강제 규정 | `shared/references/core-process-enforcement.yaml` |
 | 하네스 집행 계약 | `shared/references/harness-enforcement-contract.yaml` |
 | 패키지 거버넌스 | `shared/references/package-governance.yaml` |
 | 패키지 대체안 정책 | `shared/references/package-alternatives.yaml` |
@@ -133,6 +135,20 @@ shared/harness.yaml
 - Claude Code 호환본: `.claude/`
 
 `.claude/`는 Claude Code가 바로 읽을 수 있게 둔 호환본입니다. Claude가 별도 하네스를 관리한다면 이 저장소의 `.claude/`는 참고용으로만 보고, Codex 하네스의 원본 기준으로 보지 않습니다.
+
+## 핵심 과정 강제 규정
+
+하네스는 “좋은 안내문”이 아니라 개발 과정의 기본 게이트로 동작해야 합니다. 그래서 `shared/references/core-process-enforcement.yaml`은 구현 요청에서 다음을 완료 조건으로 봅니다.
+
+- 실행 가능한 서비스, 정적 사이트, API, 자동화 소스가 있어야 합니다.
+- 가능한 경우 실제로 실행하거나 열어보고 URL 또는 파일 경로를 남깁니다.
+- 화면이나 기능이 있으면 `scenario:test` 또는 동등한 수동 점검 기록으로 사용자 흐름을 확인합니다.
+- 주요 버튼, 링크, 탭, 모달, 보고서 다운로드 링크가 실제로 이동하거나 동작하는지 확인합니다.
+- `href="#"` 같은 임시 링크나 눌러도 반응이 없는 핵심 버튼은 구현 완료로 보지 않습니다.
+- `/health`만 통과한 것은 생존 확인일 뿐, 사용자가 일을 끝낼 수 있다는 증거가 아닙니다.
+- 체커와 하네스 검증은 구현을 돕는 증거입니다. 구현 자체를 대체하지 않습니다.
+
+프로젝트 단위 작업에는 `npm run guard`, `python -m scripts.guard`, `scripts/guard.ps1`처럼 한 번에 확인할 수 있는 명령을 두는 것을 기본으로 합니다. 이 명령에는 문법/정적 확인, 하네스 정책 확인, 사용자 시나리오 테스트, 단계에 맞는 체커 점검을 포함합니다.
 
 ## AI 도구별 연결 기준
 

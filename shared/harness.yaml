@@ -37,6 +37,7 @@ adapters:
 references:
   agent_handoff_contract: "shared/references/agent-handoff-contract.md"
   approved_tracks: "shared/references/approved-tracks.yaml"
+  core_process_enforcement: "shared/references/core-process-enforcement.yaml"
   lifecycle_quality_gates: "shared/references/lifecycle-quality-gates.yaml"
   approved_packages: "shared/references/approved-packages.yaml"
   package_denylist: "shared/references/package-denylist.yaml"
@@ -59,6 +60,7 @@ agency_onboarding:
     - "shared/references/package-denylist.yaml"
   avoid_editing_first:
     - "shared/references/lifecycle-quality-gates.yaml"
+    - "shared/references/core-process-enforcement.yaml"
     - "shared/references/checker-integration.md"
     - "shared/references/harness-enforcement-contract.yaml"
     - "shared/references/runtime-selection-policy.yaml"

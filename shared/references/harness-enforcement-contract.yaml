@@ -72,6 +72,8 @@ checker_call_contract:
     claude_desktop_config_rule: "Claude Desktop does not automatically share Claude Code project MCP settings; connect it with Desktop Extension or .mcpb packaging."
   normal_path:
     - "For package decisions, call vibecode-checker/gvskb; do not call registry directly."
+    - "For implementation-complete claims, require runnable service evidence and a user-scenario test or recorded manual checklist."
+    - "Do not accept README-only, design-only, checker-only, or harness-validation-only work as service implementation completion."
     - "For new PyPI packages, use shared/enforcement/gvskb_gate.py check/install before pip install."
     - "For new npm packages, use shared/enforcement/gvskb_gate.js check/install before npm install; default to --ignore-scripts."
     - "For JavaScript and TypeScript dependency changes, direct npm/pnpm/yarn installs are harness bypasses unless the checker gate has passed first."
@@ -240,6 +242,14 @@ checker_effort_profiles:
       - "vibecode-checker saved JSON evidence report"
     user_notice_required: "The user must be told to submit the two final reports to the security team or AX team. The reports are evidence for review, not official approval."
     no_extra_documents_by_default: true
+
+core_process_enforcement:
+  policy_file: "shared/references/core-process-enforcement.yaml"
+  implementation_completion_rule: "A runnable service/static site plus user-scenario evidence is required before implementation can be reported complete."
+  health_check_boundary: "/health proves liveness only; it does not prove that the civil-servant user flow works."
+  scenario_test_rule: "User-facing changes require scenario:test or an equivalent recorded manual checklist that covers entrypoint, primary action, result/output, and operator/admin flow when present."
+  guard_rule: "Project-level work should expose a guard command that combines static/syntax checks, harness validation, scenario testing, and the stage-appropriate checker profile."
+  reporting_rule: "Record the role, result, extra time estimate, and extra token estimate for harness and checker use when the user asks to evaluate them."
 
 mode_decision_table:
   vulnerable_critical_or_high:
@@ -436,6 +446,8 @@ release_submission_contract:
 
 known_boundaries:
   - "The package gate constrains the normal harness path, but cannot stop direct terminal installs performed outside the harness."
+  - "The core-process gate constrains the normal harness path, but cannot stop a tool from declaring completion if AGENTS.md, project guard commands, CI, or pre-commit hooks are not wired to it."
+  - "README instructions are not enforcement by themselves; enforcement requires agent instructions, guard scripts, validation scripts, CI, or pre-commit hooks."
   - "The harness cannot retroactively prove already-installed packages are safe."
   - "The harness cannot control IDE/agent tools that bypass this harness."
   - "Users with filesystem access may edit local policy files; release gates must therefore re-check evidence."

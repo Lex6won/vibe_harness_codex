@@ -11,6 +11,7 @@ principles:
   evidence_not_approval: "MCP and checker outputs are evidence; official approval remains with the institution."
   keep_user_at_business_level: "Ask civil servants about users, data, and 업무흐름; do not make them choose frameworks or package managers."
   two_report_release_default: "For release readiness, the default submission package is the two files saved by vibecode-checker: a human-readable HTML report and a JSON evidence report. Extra application forms are conditional, not default."
+  working_software_over_document_only: "For implementation requests, design documents, README updates, checker output, or harness validation cannot replace a runnable service and user-scenario evidence."
 
 checker_profiles:
   quick:
@@ -41,6 +42,7 @@ checker_profiles:
       - "scanned_file_count > 0"
       - "critical/high/block findings resolved or explicitly routed to reviewer"
       - "health or smoke test recorded"
+      - "user scenario test recorded when user-facing behavior exists"
 
   full:
     when: "Before deployment, official development environment handoff, security review request, or AX/security team submission."
@@ -107,10 +109,14 @@ stages:
         - "no_denied_package"
         - "blocked_package_has_replacement_or_exception"
         - "quick_checker_used_only_for_risky_changes_or_user_request"
+        - "service_runs_or_static_site_opens"
+        - "guard_command_defined_or_equivalent"
       block_when:
         - "new_framework_without_track"
         - "denied_package_without_replacement"
         - "runtime_external_access_added_without_policy"
+        - "implementation_claim_without_runnable_service"
+        - "readme_only_harness_application"
 
   test:
     goal: "Run standard security and quality checks after implementation is complete, before release readiness."
@@ -123,11 +129,18 @@ stages:
         - "scan_path_or_equivalent_completed"
         - "dependencies_checked_or_marked_needs_review"
         - "health_or_smoke_test_recorded"
+        - "user_scenario_test_recorded"
+        - "button_link_contract_test_recorded_for_user_facing_pages"
+        - "scenario_test_command_or_manual_checklist_present"
         - "checker_profile_standard_recorded"
       block_when:
         - "critical_or_high_unresolved"
         - "dependency_scan_missing_for_L2_or_L3"
         - "scanned_file_count_zero"
+        - "scenario_test_missing_for_user_facing_service"
+        - "scenario_test_failed"
+        - "health_only_when_user_flow_exists"
+        - "broken_button_or_link_target"
 
   release:
     goal: "Run full checker validation and prepare the minimum two-report submission for security/AX review without claiming official approval."
@@ -146,6 +159,7 @@ stages:
       pass_when:
         - "full_checker_html_and_json_saved"
         - "full_security_evidence_present"
+        - "scenario_test_passed_before_release"
         - "deployment_environment_matches_profile"
         - "package_registry_or_review_status_recorded"
         - "final_report_submission_notice_given"
@@ -163,6 +177,10 @@ balance_checks:
       action: "warn for L1, block for L2/L3"
     - symptom: "security report says safe when no files were scanned"
       action: "block"
+    - symptom: "implementation report talks only about checker/harness but no service behavior"
+      action: "block and request runnable service evidence plus user scenario results"
+    - symptom: "only health check is recorded even though the service has a visible user flow"
+      action: "block completion and require a scenario test or recorded manual checklist"
   too_heavy:
     - symptom: "L1 idea/prototype forced to complete deployment application forms"
       action: "downgrade to feature brief, manifest, source, quick check"

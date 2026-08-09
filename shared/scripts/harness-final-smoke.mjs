@@ -67,6 +67,8 @@ requireText("AGENTS.md", [
   "quick during coding",
   "standard operating harness",
   "standard after implementation completion",
+  "core-process-enforcement.yaml",
+  "scenario:test",
   "full before deployment/security/AX submission",
   "vibecode-checker",
   "dev-quick",
@@ -89,6 +91,7 @@ requireText("shared/harness.yaml", [
   "https://github.com/Lex6won/vibecode-checker",
   "checker-mediated-only",
   "checker_profile_policy:",
+  "core-process-enforcement.yaml",
   "package_gate:",
   "common_mcp_config",
   "codex_project_config",
@@ -105,6 +108,7 @@ requireText("shared/institution-profile.yaml", [
   "allowed_function_implementation_languages:",
   "- python",
   "- javascript",
+  "- typescript",
   "canonical_repositories:",
   "registry_access: \"checker-mediated-only\"",
 ]);
@@ -137,6 +141,34 @@ requireText("shared/references/lifecycle-quality-gates.yaml", [
   "two_report_release_default",
   "mandatory_user_notice",
   "conditional_documents_only",
+  "working_software_over_document_only",
+  "user_scenario_test_recorded",
+  "scenario_test_missing_for_user_facing_service",
+  "health_only_when_user_flow_exists",
+]);
+
+requireText("shared/references/core-process-enforcement.yaml", [
+  "core_process_enforcement_version:",
+  "implementation_first:",
+  "health_only_is_not_user_scenario",
+  "clickable_controls_are_user_flow",
+  "mandatory_processes:",
+  "service_implementation:",
+  "scenario_test:",
+  "security_check:",
+  "package_gate:",
+  "release_submission:",
+  "recording_requirements:",
+  "guard_command:",
+  "button_link_contract_test_for_user_facing_pages",
+]);
+
+requireText("shared/references/harness-enforcement-contract.yaml", [
+  "core_process_enforcement:",
+  "implementation_completion_rule",
+  "scenario_test_rule",
+  "health_check_boundary",
+  "guard_rule",
 ]);
 
 requireText("shared/references/package-alternatives.yaml", [

@@ -22,18 +22,19 @@ Read these files first, in this order:
 6. `shared/references/approved-tracks.yaml`
 7. `shared/references/runtime-selection-policy.yaml`
 8. `shared/references/lifecycle-quality-gates.yaml`
-9. `shared/references/harness-enforcement-contract.yaml`
-10. `shared/references/package-governance.yaml`
-11. `shared/references/package-alternatives.yaml`
-12. `shared/references/trusted-registry-integration.yaml`
-13. `shared/references/approved-packages.yaml`
-14. `shared/references/package-denylist.yaml`
-15. `shared/references/package-risk-policy.md`
-16. `shared/references/checker-integration.md`
-17. `shared/references/checker-bootstrap-policy.md`
-18. `shared/assets/coaching-messages.md`
-19. `shared/enforcement/gvskb_gate.py`
-20. `shared/enforcement/gvskb_gate.js`
+9. `shared/references/core-process-enforcement.yaml`
+10. `shared/references/harness-enforcement-contract.yaml`
+11. `shared/references/package-governance.yaml`
+12. `shared/references/package-alternatives.yaml`
+13. `shared/references/trusted-registry-integration.yaml`
+14. `shared/references/approved-packages.yaml`
+15. `shared/references/package-denylist.yaml`
+16. `shared/references/package-risk-policy.md`
+17. `shared/references/checker-integration.md`
+18. `shared/references/checker-bootstrap-policy.md`
+19. `shared/assets/coaching-messages.md`
+20. `shared/enforcement/gvskb_gate.py`
+21. `shared/enforcement/gvskb_gate.js`
 
 The `.claude/` directory is a Claude Code compatibility copy. Do not treat it as the Codex source of truth. For Codex, `AGENTS.md`, `shared/`, and `shared/harness.yaml` are authoritative.
 
@@ -48,6 +49,7 @@ The `.claude/` directory is a Claude Code compatibility copy. Do not treat it as
 - Use `shared/institution-profile.yaml` for agency-specific development server, production server, language, DBMS, plugin, and library constraints.
 - Use `shared/references/runtime-selection-policy.yaml` to recommend language/framework/DBMS from server size, OS, DBMS, exposure, and service type. Do not ask the user to choose a programming language when policy can decide safely.
 - Use `shared/references/lifecycle-quality-gates.yaml` to keep idea, design, implementation, test, and release work proportional to maturity level.
+- Use `shared/references/core-process-enforcement.yaml` whenever building or changing a service. Implementation completion requires runnable service evidence and user-scenario test evidence; README-only, design-only, checker-only, or harness-validation-only work is not complete.
 - Use `shared/references/harness-enforcement-contract.yaml` before package installation, dependency changes, source checks, and release handoff. The harness enforces checker verdicts; it does not become the checker or registry.
 - Before adding or changing Python, JavaScript, or TypeScript packages, use the package gate: `shared/enforcement/gvskb_gate.py` for PyPI and `shared/enforcement/gvskb_gate.js` for npm. Direct `pip install`, `npm install`, `pnpm add`, or `yarn add` for new packages is a harness bypass and must be rerouted through the gate first.
 - Implement functional code only in Python, JavaScript, or TypeScript tracks allowed by `shared/institution-profile.yaml`. TypeScript is allowed because `vibecode-checker` scans `.ts` and `.tsx`; TypeScript package changes still use the npm gate.
@@ -63,6 +65,8 @@ The `.claude/` directory is a Claude Code compatibility copy. Do not treat it as
 - For agency onboarding, first edit `shared/institution-profile.yaml` and then package seed policy files such as `shared/references/approved-packages.yaml` and `shared/references/package-denylist.yaml`. Do not ask new agencies to edit common decision logic files first.
 - Use `shared/golden-templates/` as the starting point for implementation. Do not create an arbitrary stack outside an approved track.
 - Apply checker effort proportionally: quick during coding for risky changes only, standard after implementation completion, and full before deployment/security/AX submission.
+- For user-facing or operator-facing work, create or run `scenario:test` or an equivalent recorded manual checklist. A `/health` check is useful but is not enough when a visible flow exists. The scenario evidence must include primary buttons, links, tabs, modal actions, and report/download links; placeholder `href="#"` or dead click targets block completion.
+- Before reporting implementation complete, state the runnable URL/file, the user scenarios tested, the scenario result, the checker result, and the harness gate result. If the user is evaluating harness/checker overhead, also record estimated extra time and token cost.
 - Use checker built-in profiles by default: quick maps to `dev-quick`. Do not rely on relative `GVSKB_POLICIES_DIR`; custom policy directories must be absolute. After `scan_path`, verify that the returned/applied checker profile matches the requested checker profile, or mark validation incomplete.
 - The checker MCP command must be `gvskb-server` or `python -m gvskb.server`, never `gvskb mcp`. ChatGPT desktop Codex, Codex CLI, and Codex IDE share `.codex/config.toml` or the user's `~/.codex/config.toml`. Claude Code reads root `.mcp.json` and may use `.claude/.mcp.json` as a compatibility copy. Claude Desktop does not automatically share Claude Code settings; use a Desktop Extension or `.mcpb` package. Do not hard-code `GVSKB_MODE=offline`; set it only for confirmed air-gapped/offline environments. If checker output includes non-null `profile_fallback`, mark validation incomplete.
 - Keep `network_profile` separate from checker profiles. `admin-network`, `dmz-public`, and `internet-prototype` are network/deployment classifications, not values for `scan_path(profile=...)`.
