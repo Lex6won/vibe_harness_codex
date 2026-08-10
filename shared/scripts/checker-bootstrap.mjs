@@ -48,6 +48,30 @@ function run(command, args, options = {}) {
   }
 }
 
+function installPythonPackage(packagePath) {
+  const configured = process.env.PYTHON?.trim();
+  const candidates = [
+    configured ? { command: configured, args: ["-m", "pip", "install", "-e", packagePath] } : null,
+    { command: "pip.exe", args: ["install", "-e", packagePath] },
+    { command: "pip", args: ["install", "-e", packagePath] },
+    { command: "python", args: ["-m", "pip", "install", "-e", packagePath] },
+    { command: "py", args: ["-3", "-m", "pip", "install", "-e", packagePath] },
+  ].filter(Boolean);
+
+  const failures = [];
+  for (const candidate of candidates) {
+    const result = spawnSync(candidate.command, candidate.args, { encoding: "utf8", shell: false });
+    if (!result.error && result.status === 0) {
+      if (result.stdout) process.stdout.write(result.stdout);
+      if (result.stderr) process.stderr.write(result.stderr);
+      return;
+    }
+    const detail = [result.stderr, result.stdout].filter(Boolean).join(" ").trim().replace(/\s+/g, " ");
+    failures.push(`${candidate.command}: ${result.error?.message || detail || `exit ${result.status}`}`);
+  }
+  throw new Error(`Python/pip 설치를 완료하지 못했습니다. ${failures.join(" | ")}`);
+}
+
 const target = resolve(valueAfter("--target", "tools/vibecode-checker"));
 const yes = hasArg("--yes");
 const installPython = hasArg("--install-python");
@@ -83,8 +107,7 @@ if (!existsSync(target)) {
 }
 
 if (installPython) {
-  const python = process.env.PYTHON || "python";
-  run(python, ["-m", "pip", "install", "-e", target]);
+  installPythonPackage(target);
 }
 
 console.log("");
